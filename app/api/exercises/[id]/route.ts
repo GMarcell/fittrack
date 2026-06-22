@@ -9,6 +9,9 @@ export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const parsed = updateExerciseSchema.safeParse(body);
   if (!parsed.success) {
@@ -39,6 +42,9 @@ export async function PATCH(req: Request, { params }: Params) {
 export async function DELETE(req: Request, { params }: Params) {
   const { id } = await params;
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const existing = await prisma.exercise.findFirst({
     where: { id: id, userId: user.id },
   });

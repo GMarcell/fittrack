@@ -5,6 +5,9 @@ import { createExerciseSchema } from "@/validation/exercise";
 
 export async function GET() {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const exercises = await prisma.exercise.findMany({
     where: { userId: user.id },
   });
@@ -14,6 +17,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const parsed = createExerciseSchema.safeParse(body);
   if (!parsed.success) {
@@ -25,7 +31,7 @@ export async function POST(req: Request) {
 
   const exercise = await prisma.exercise.create({
     data: {
-      userId: user.id,
+      userId: user?.id ?? "",
       name: parsed.data.name,
       category: parsed.data.category,
       unit: parsed.data.unit,

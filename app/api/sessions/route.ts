@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const sessions = await prisma.session.findMany({
     where: { userId: user.id },
     include: {
@@ -18,6 +21,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const parsed = createSessionSchema.safeParse(body);
   if (!parsed.success) {
@@ -32,7 +38,7 @@ export async function POST(req: Request) {
   const session = await prisma.session.create({
     data: {
       ...sessionData,
-      userId: user.id,
+      userId: user?.id ?? "",
       sessionExercises: sessionExercises
         ? {
             create: sessionExercises,

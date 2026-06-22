@@ -8,6 +8,9 @@ type Params = { params: Promise<{ id: string }> };
 export async function DELETE(req: Request, { params }: Params) {
   const { id } = await params;
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const existing = await prisma.session.findFirst({
     where: { id: id, userId: user.id },
   });
@@ -28,6 +31,9 @@ export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const parsed = updateSessionSchema.safeParse(body);
   if (!parsed.success) {

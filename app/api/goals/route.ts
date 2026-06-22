@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const goals = await prisma.goal.findMany({
     where: { userId: user.id },
   });
@@ -14,6 +17,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const parsed = createGoalSchema.safeParse(body);
   if (!parsed.success) {
@@ -25,7 +31,7 @@ export async function POST(req: Request) {
 
   const goal = await prisma.goal.create({
     data: {
-      userId: user.id,
+      userId: user?.id ?? "",
       name: parsed.data.name,
       priority: parsed.data.priority,
       targetDate: parsed.data?.targetDate ?? null,

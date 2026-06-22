@@ -1,0 +1,259 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum ExerciseCategory {
+    STRENGTH
+    CONDITIONING
+    SKILL
+    FLEXIBILITY
+    OTHER
+}
+
+enum MetricUnit {
+    REPS
+    SECONDS
+    MINUTES
+    METERS
+    KM
+    KG
+    LB
+    COUNT
+}
+
+enum GoalPriority {
+    PRIMARY
+    SECONDARY
+}
+
+enum GoalStatus {
+    ACTIVE
+    ARCHIVED
+}
+
+enum StatType {
+    STR // Strength
+    END // Endurance
+    AGI // Agility
+    SPD // Speed
+    PWR // Power
+    FLX // Flexibility
+    VIT // Vitality
+    DSC // Discipline
+}
+
+enum QuestStatus {
+    OFFERED // generated, not yet accepted — no stat stakes
+    PENDING // accepted, in progress for the day — failure penalty applies if not completed
+    COMPLETED
+    FAILED
+}
+
+model User {
+    id           String   @id @default(cuid())
+    email        String   @unique
+    name         String?
+    passwordHash String
+    timezone     String   @default("Asia/Jakarta") // IANA tz name — used to compute the 5 AM day boundary for quests
+    createdAt    DateTime @default(now())
+
+    activityTypes       ActivityType[]
+    exercises           Exercise[]
+    sessions            Session[]
+    benchmarks          Benchmark[]
+    goals               Goal[]
+    stats               Stat[]
+    statHistory         StatHistory[]
+    quests              Quest[]
+    onboardingResponses OnboardingResponse[]
+}
+
+model ActivityType {
+    id     String  @id @default(cuid())
+    userId String
+    user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name   String
+    color  String?
+
+    sessions Session[]
+
+    @@unique([userId, name])
+}
+
+model Goal {
+    id         String       @id @default(cuid())
+    userId     String
+    user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name       String
+    priority   GoalPriority @default(SECONDARY)
+    status     GoalStatus   @default(ACTIVE)
+    targetDate DateTime?
+    notes      String?
+    createdAt  DateTime     @default(now())
+    archivedAt DateTime?
+
+    sessions Session[]
+
+    @@index([userId, status])
+}
+
+model Session {
+    id             String       @id @default(cuid())
+    userId         String
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    date           DateTime
+    activityTypeId String
+    activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
+    goalId         String?
+    goal           Goal?        @relation(fields: [goalId], references: [id])
+    focus          String?
+    duration       Int?
+    rpe            Int?
+    notes          String?
+    createdAt      DateTime     @default(now())
+
+    sessionExercises SessionExercise[]
+    quests           Quest[]
+
+    @@index([userId, date])
+    @@index([activityTypeId])
+}
+
+model Exercise {
+    id       String           @id @default(cuid())
+    userId   String
+    user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name     String
+    category ExerciseCategory
+    unit     MetricUnit
+    statTags StatType[] // which stat(s) this exercise primarily trains
+
+    sessionExercises SessionExercise[]
+
+    @@unique([userId, name])
+}
+
+model SessionExercise {
+    id         String   @id @default(cuid())
+    sessionId  String
+    session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+    exerciseId String
+    exercise   Exercise @relation(fields: [exerciseId], references: [id])
+
+    sets  Int?
+    reps  Int?
+    value Float?
+    notes String?
+
+    @@index([sessionId])
+}
+
+model Benchmark {
+    id     String     @id @default(cuid())
+    userId String
+    user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    metric String
+    value  Float
+    unit   MetricUnit
+    date   DateTime   @default(now())
+
+    @@index([userId, metric, date])
+}
+
+model FitnessStandard {
+    id     String     @id @default(cuid())
+    metric String
+    unit   MetricUnit
+    ageMin Int?
+    ageMax Int?
+    gender String?
+    level  String
+    value  Float
+
+    @@index([metric, level])
+}
+
+/// Current value per stat, per user — the "status window" snapshot.
+/// Initial value is set during onboarding (see OnboardingResponse), not a flat default.
+model Stat {
+    id     String   @id @default(cuid())
+    userId String
+    user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type   StatType
+    value  Float // 0-100 scale; seeded from onboarding assessment, not a hardcoded default
+
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, type])
+}
+
+/// Raw answers from the one-time onboarding self-assessment, kept for
+/// traceability and so the value-mapping logic can be recalibrated later
+/// without re-asking the user.
+model OnboardingResponse {
+    id          String   @id @default(cuid())
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    questionKey String // e.g. "max_pushups", "five_k_run", "training_days_per_week"
+    rawAnswer   String // user's raw input/selection, stored as text for flexibility
+    mappedStat  StatType
+    mappedValue Float // the resulting starting value contributed to that stat
+    createdAt   DateTime @default(now())
+
+    @@index([userId])
+}
+
+/// Append-only log of stat deltas, so progress over time can be charted
+model StatHistory {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type      StatType
+    delta     Float // positive (quest/session gain) or negative (quest failure penalty)
+    reason    String // e.g. "Quest completed: 50 push-ups", "Quest failed: Morning run"
+    questId   String?
+    quest     Quest?   @relation(fields: [questId], references: [id])
+    createdAt DateTime @default(now())
+
+    @@index([userId, type, createdAt])
+}
+
+/// AI-generated daily quest
+model Quest {
+    id          String      @id @default(cuid())
+    userId      String
+    user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    date        DateTime    @default(now()) // the day this quest belongs to
+    title       String
+    description String?
+    targetText  String // e.g. "50 push-ups", "20-minute easy run"
+    status      QuestStatus @default(OFFERED)
+    acceptedAt  DateTime? // set when user accepts — only PENDING+ quests carry stat stakes
+    sessionId   String? // optional link to the Session that fulfilled it
+    session     Session?    @relation(fields: [sessionId], references: [id])
+    createdAt   DateTime    @default(now())
+    resolvedAt  DateTime?
+
+    rewards    QuestStatReward[]
+    statEvents StatHistory[]
+
+    @@index([userId, date])
+}
+
+/// Stat point value attached to a quest — applied as a gain on completion,
+/// and as a smaller penalty (negative) on failure
+model QuestStatReward {
+    id              String   @id @default(cuid())
+    questId         String
+    quest           Quest    @relation(fields: [questId], references: [id], onDelete: Cascade)
+    type            StatType
+    completionValue Float // points granted on completion — varies by quest difficulty, set by AI at generation time
+    failurePenalty  Float // points deducted on failure — scales with completionValue to hold the gain/penalty ratio constant (stored as positive, subtracted in logic)
+
+    @@index([questId])
+}

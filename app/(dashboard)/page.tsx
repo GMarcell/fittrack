@@ -5,6 +5,7 @@ import { BenchmarkChart } from "@/components/dashboard/benchmark-chart";
 import { GoalCountdown } from "@/components/dashboard/goal-countdown";
 import { ActivityMix } from "@/components/dashboard/activity-mix";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
+import { FitnessRadarChart } from "@/components/dashboard/radar-chart";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -13,7 +14,12 @@ export default async function DashboardPage() {
     prisma.session.findMany({
       where: { userId: user.id },
       orderBy: { date: "asc" },
-      include: { activityType: true },
+      include: {
+        activityType: true,
+        sessionExercises: {
+          include: { exercise: true },
+        },
+      },
     }),
     prisma.goal.findMany({
       where: { userId: user.id },
@@ -31,6 +37,7 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <AiSuggestion />
       <GoalCountdown goals={goals} />
+      <FitnessRadarChart sessions={sessions} />
       <ConsistencyChart sessions={sessions} />
       <BenchmarkChart benchmarks={benchmarks} standards={standards} />
       <ActivityMix sessions={sessions} />

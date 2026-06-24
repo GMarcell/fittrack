@@ -24,30 +24,39 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border bg-card px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold text-lg text-foreground">FitTrack</span>
-          <Link
-            href="/sessions"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Sessions
-          </Link>
+      <nav className="border-b border-white/5 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 px-6 py-4 flex items-center justify-between shadow-lg shadow-black/30">
+        <div className="flex items-center gap-8">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5">
+            <div className="size-2 rounded-full bg-navy-500 shadow-lg shadow-navy-500/30" />
+            <span className="font-bold text-base tracking-tight text-white/90">
+              FitTrack
+            </span>
+          </div>
 
-          <Link
-            href="/goals"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Goals
-          </Link>
-          <Link
-            href="/quests"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Quests
-          </Link>
+          {/* Nav links */}
+          <div className="flex items-center gap-1">
+            <Link
+              href="/sessions"
+              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
+            >
+              Sessions
+            </Link>
+            <Link
+              href="/goals"
+              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
+            >
+              Goals
+            </Link>
+            <Link
+              href="/quests"
+              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
+            >
+              Quests
+            </Link>
+          </div>
         </div>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="shadow-md shadow-navy-500/20 bg-navy-500 hover:bg-navy-400 text-white">
           <Link href="/sessions/new">Log Session</Link>
         </Button>
       </nav>

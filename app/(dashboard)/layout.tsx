@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { runQuestFailureSweep } from "@/lib/quest-sweep";
+import { LogoutButton } from "@/components/logout-button";
 
 export default async function DashboardLayout({
   children,
@@ -56,9 +57,19 @@ export default async function DashboardLayout({
             </Link>
           </div>
         </div>
-        <Button asChild size="sm" className="shadow-md shadow-navy-500/20 bg-navy-500 hover:bg-navy-400 text-white">
+        <Button
+          asChild
+          size="sm"
+          className="shadow-md shadow-navy-500/20 bg-navy-500 hover:bg-navy-400 text-white"
+        >
           <Link href="/sessions/new">Log Session</Link>
         </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm">
+            <Link href="/sessions/new">Log Session</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </nav>
       <main className="mx-auto max-w-2xl p-6">{children}</main>
     </div>

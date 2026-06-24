@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { runQuestFailureSweep } from "@/lib/quest-sweep";
 
 export default async function DashboardLayout({
   children,
@@ -18,6 +19,8 @@ export default async function DashboardLayout({
   if (onboardingCount === 0) {
     redirect("/onboarding");
   }
+
+  await runQuestFailureSweep(user.id);
 
   return (
     <div className="min-h-screen bg-neutral-50">

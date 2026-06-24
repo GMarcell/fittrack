@@ -6,6 +6,7 @@ import { ActivityMix } from "@/components/dashboard/activity-mix";
 import { GoalCountdown } from "@/components/dashboard/goal-countdown";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
 import { FitnessRadarChart } from "@/components/dashboard/radar-chart";
+import { DailyQuests } from "@/components/dashboard/daily-quests";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
         </span>
       </div>
       <GoalCountdown goals={goals} />
+      <DailyQuests />
       <FitnessRadarChart stats={stats} />
       <AiSuggestion />
       <ConsistencyChart sessions={sessions} />

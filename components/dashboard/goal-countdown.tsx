@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { daysUntil } from "@/lib/utils";
 
 type Goal = {
   id: string;
@@ -9,11 +10,6 @@ type Goal = {
   priority: string;
   targetDate: Date | string | null;
 };
-
-function daysUntil(date: Date | string) {
-  const diff = new Date(date).getTime() - Date.now();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
 
 export function GoalCountdown({ goals }: { goals: Goal[] }) {
   const withDates = goals.filter((g) => g.targetDate);

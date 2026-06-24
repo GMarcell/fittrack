@@ -7,9 +7,24 @@ import { GoalCountdown } from "@/components/dashboard/goal-countdown";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
 import { FitnessRadarChart } from "@/components/dashboard/radar-chart";
 import { DailyQuests } from "@/components/dashboard/daily-quests";
+import { generateQuestsForUser } from "@/lib/quest";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Fetch today's quests — generate if none exist
+  let quests = await prisma.quest.findMany({
+    where: { userId: user.id, date: { gte: today } },
+    include: { rewards: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (quests.length === 0) {
+    quests = await generateQuestsForUser(user.id);
+  }
 
   const [sessions, goals, benchmarks, standards, stats] = await Promise.all([
     prisma.session.findMany({
@@ -35,7 +50,6 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Compute Hunter Level (average of all 8 stats)
   const avgStat = stats.length
     ? stats.reduce((sum, s) => sum + s.value, 0) / stats.length
     : 0;
@@ -62,9 +76,9 @@ export default async function DashboardPage() {
         </span>
       </div>
       <GoalCountdown goals={goals} />
-      <DailyQuests />
-      <FitnessRadarChart stats={stats} />
+      <DailyQuests initialQuests={quests} />
       <AiSuggestion />
+      <FitnessRadarChart stats={stats} />
       <ConsistencyChart sessions={sessions} />
       <BenchmarkChart benchmarks={benchmarks} standards={standards} />
       <ActivityMix sessions={sessions} />

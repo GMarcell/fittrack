@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,18 +36,11 @@ const STATUS_LABELS: Record<Quest["status"], string> = {
   FAILED: "Failed",
 };
 
-export function DailyQuests() {
-  const [quests, setQuests] = useState<Quest[]>([]);
-  const [loading, setLoading] = useState(true);
+export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
+  const router = useRouter();
+  const [quests, setQuests] = useState<Quest[]>(initialQuests);
   const [regenerating, setRegenerating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  async function fetchQuests() {
-    const res = await fetch("/api/quests/today");
-    const data = await res.json();
-    setQuests(data);
-    setLoading(false);
-  }
 
   async function regenerate() {
     setRegenerating(true);
@@ -76,26 +70,9 @@ export function DailyQuests() {
     const updated = await res.json();
     setQuests((prev) => prev.map((q) => (q.id === questId ? updated : q)));
     setActionLoading(null);
+    // Refresh server components to update radar chart + level
+    router.refresh();
   }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      const res = await fetch("/api/quests/today");
-      const data = await res.json();
-      if (!cancelled) {
-        setQuests(data);
-        setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const hasPending = quests.some(
     (q) => q.status === "PENDING" || q.status === "COMPLETED",
@@ -122,14 +99,13 @@ export function DailyQuests() {
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {loading ? (
+        {quests.length === 0 ? (
           <p className="text-sm text-neutral-400 text-center py-4">
-            The System is preparing your quests...
+            No quests for today yet.
           </p>
         ) : (
           quests.map((quest) => (
             <div key={quest.id} className="border rounded-lg p-4 space-y-2">
-              {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-sm">{quest.title}</p>
@@ -146,12 +122,10 @@ export function DailyQuests() {
                 </span>
               </div>
 
-              {/* Target */}
               <p className="text-xs text-neutral-600 bg-neutral-50 px-3 py-2 rounded">
                 🎯 {quest.targetText}
               </p>
 
-              {/* Rewards */}
               <div className="flex gap-2 flex-wrap">
                 {quest.rewards.map((r) => (
                   <div key={r.id} className="flex gap-1">
@@ -165,7 +139,6 @@ export function DailyQuests() {
                 ))}
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2 pt-1">
                 {quest.status === "OFFERED" && (
                   <Button

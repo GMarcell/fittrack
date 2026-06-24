@@ -40,6 +40,12 @@ export default async function DashboardLayout({
           >
             Goals
           </Link>
+          <Link
+            href="/quests"
+            className="text-sm text-neutral-600 hover:text-black"
+          >
+            Quests
+          </Link>
         </div>
         <Button asChild size="sm">
           <Link href="/sessions/new">Log Session</Link>

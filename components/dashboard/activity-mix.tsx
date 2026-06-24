@@ -22,17 +22,17 @@ export function ActivityMix({ sessions }: { sessions: Session[] }) {
       </CardHeader>
       <CardContent>
         {sorted.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-6">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No data yet.
           </p>
         ) : (
           <div className="space-y-2">
             {sorted.map(([name, count]) => (
               <div key={name} className="flex items-center gap-3">
-                <div className="w-32 text-sm text-neutral-600">{name}</div>
-                <div className="flex-1 bg-neutral-100 rounded-full h-2">
+                <div className="w-32 text-sm text-muted-foreground">{name}</div>
+                <div className="flex-1 bg-muted rounded-full h-2">
                   <div
-                    className="bg-neutral-900 h-2 rounded-full"
+                    className="bg-primary h-2 rounded-full"
                     style={{ width: `${(count / total) * 100}%` }}
                   />
                 </div>

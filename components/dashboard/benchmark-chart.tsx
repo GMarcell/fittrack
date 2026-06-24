@@ -56,7 +56,7 @@ export function BenchmarkChart({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Benchmark Progress</CardTitle>
           <select
-            className="text-sm border rounded px-2 py-1"
+            className="text-sm border border-border rounded px-2 py-1 bg-background text-foreground"
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
           >
@@ -70,20 +70,20 @@ export function BenchmarkChart({
       </CardHeader>
       <CardContent>
         {filtered.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-6">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No benchmark data yet.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={filtered}>
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <YAxis tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <Tooltip />
               <Legend />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#171717"
+                stroke="var(--foreground)"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 name="Your score"
@@ -94,7 +94,7 @@ export function BenchmarkChart({
                   y={s.value}
                   stroke={LEVEL_COLORS[s.level] ?? "#e5e7eb"}
                   strokeDasharray="4 4"
-                  label={{ value: s.level, fontSize: 11, fill: "#6b7280" }}
+                  label={{ value: s.level, fontSize: 11, fill: "var(--muted-foreground)" }}
                 />
               ))}
             </LineChart>

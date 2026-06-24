@@ -65,20 +65,20 @@ export function AiSuggestion() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           {suggestion && (
-            <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
               {suggestion}
             </p>
           )}
 
           {quests.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Today&apos;s quests from this plan
               </p>
               {quests.map((q) => (
                 <div key={q.id} className="border rounded-lg p-3 space-y-1">
                   <p className="text-sm font-medium">{q.title}</p>
-                  <p className="text-xs text-neutral-500">🎯 {q.targetText}</p>
+                  <p className="text-xs text-muted-foreground">🎯 {q.targetText}</p>
                   <div className="flex gap-1 flex-wrap">
                     {q.rewards.map((r) => (
                       <Badge key={r.id} variant="secondary" className="text-xs">
@@ -88,7 +88,7 @@ export function AiSuggestion() {
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-muted-foreground/70">
                 ↑ These quests are now live in Today&apos;s Quests above —
                 accept them to start earning stats.
               </p>

@@ -24,27 +24,27 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm p-8">
-      <h1 className="text-xl font-semibold mb-4">Log in</h1>
-      <form onSubmit={handleSubmit} className="space-y-3">
+    <main className="mx-auto max-w-sm p-8 min-h-screen flex flex-col justify-center">
+      <h1 className="text-2xl font-bold mb-6 text-center">FitTrack</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-border bg-background text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-border bg-background text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
         <button
           type="submit"
-          className="w-full bg-black text-white p-2 rounded"
+          className="w-full bg-primary text-primary-foreground p-2.5 rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors"
         >
           Log in
         </button>

@@ -24,7 +24,7 @@ export default async function SessionsPage() {
 
       {sessions.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-neutral-500">
+          <CardContent className="py-10 text-center text-muted-foreground">
             No sessions logged yet.{" "}
             <Link href="/sessions/new" className="underline">
               Log your first one.
@@ -40,7 +40,7 @@ export default async function SessionsPage() {
                   <CardTitle className="text-base">
                     {session.focus ?? session.activityType.name}
                   </CardTitle>
-                  <span className="text-sm text-neutral-400">
+                  <span className="text-sm text-muted-foreground">
                     {new Date(session.date).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",

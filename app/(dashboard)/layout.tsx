@@ -23,26 +23,26 @@ export default async function DashboardLayout({
   await runQuestFailureSweep(user.id);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <nav className="border-b bg-white px-6 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-background">
+      <nav className="border-b border-border bg-card px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="font-semibold text-lg">FitTrack</span>
+          <span className="font-semibold text-lg text-foreground">FitTrack</span>
           <Link
             href="/sessions"
-            className="text-sm text-neutral-600 hover:text-black"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Sessions
           </Link>
 
           <Link
             href="/goals"
-            className="text-sm text-neutral-600 hover:text-black"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Goals
           </Link>
           <Link
             href="/quests"
-            className="text-sm text-neutral-600 hover:text-black"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Quests
           </Link>

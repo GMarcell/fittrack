@@ -40,13 +40,13 @@ export function FitnessRadarChart({ stats }: { stats: Stat[] }) {
             <PolarGrid />
             <PolarAngleAxis
               dataKey="attribute"
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
             />
             <Radar
               name="Stats"
               dataKey="value"
-              stroke="#171717"
-              fill="#171717"
+              stroke="var(--foreground)"
+              fill="var(--foreground)"
               fillOpacity={0.15}
               strokeWidth={2}
             />

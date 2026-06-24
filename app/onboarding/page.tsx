@@ -52,27 +52,27 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
         {/* Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold">FitTrack</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-muted-foreground">
             The System is initializing your stats...
           </p>
         </div>
 
         {/* Progress */}
         <div className="space-y-1">
-          <div className="flex justify-between text-xs text-neutral-400">
+          <div className="flex justify-between text-xs text-muted-foreground">
             <span>
               Step {step + 1} of {QUESTIONS.length}
             </span>
             <span>{progress}%</span>
           </div>
-          <div className="w-full bg-neutral-200 rounded-full h-1.5">
+          <div className="w-full bg-muted rounded-full h-1.5">
             <div
-              className="bg-neutral-900 h-1.5 rounded-full transition-all duration-300"
+              className="bg-primary h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -92,8 +92,8 @@ export default function OnboardingPage() {
                 onClick={() => setSelected(opt.band)}
                 className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
                   selected === opt.band
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-200 hover:border-neutral-400 bg-white"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border hover:border-muted-foreground bg-card"
                 }`}
               >
                 {opt.label}

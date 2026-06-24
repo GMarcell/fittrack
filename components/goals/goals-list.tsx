@@ -51,7 +51,7 @@ export function GoalsList({
             <div>
               <CardTitle className="text-base">{goal.name}</CardTitle>
               {goal.notes && (
-                <p className="text-xs text-neutral-500 mt-0.5">{goal.notes}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{goal.notes}</p>
               )}
             </div>
             <Badge
@@ -85,7 +85,6 @@ export function GoalsList({
               <Button
                 size="sm"
                 variant="outline"
-                className="text-neutral-500"
                 disabled={archiving === goal.id}
                 onClick={() => handleArchive(goal.id)}
               >
@@ -94,7 +93,7 @@ export function GoalsList({
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-red-500 hover:text-red-700"
+                className="text-destructive hover:text-destructive/80"
                 onClick={async () => {
                   await fetch(`/api/goals/${goal.id}`, { method: "DELETE" });
                   router.refresh();
@@ -113,12 +112,12 @@ export function GoalsList({
     <div className="space-y-6">
       {/* Active goals */}
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Active ({activeGoals.length})
         </h2>
         {activeGoals.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-neutral-400 text-sm">
+            <CardContent className="py-8 text-center text-muted-foreground text-sm">
               No active goals yet.
             </CardContent>
           </Card>
@@ -131,7 +130,7 @@ export function GoalsList({
       {archivedGoals.length > 0 && (
         <div className="space-y-3">
           <button
-            className="text-sm font-medium text-neutral-400 hover:text-neutral-600 flex items-center gap-1"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             onClick={() => setShowArchived((v) => !v)}
           >
             {showArchived ? "▾" : "▸"} Archived ({archivedGoals.length})

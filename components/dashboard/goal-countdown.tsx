@@ -20,11 +20,11 @@ export function GoalCountdown({ goals }: { goals: Goal[] }) {
       {withDates.map((g) => {
         const days = daysUntil(g.targetDate!);
         return (
-          <Card key={g.id} className="border-neutral-200">
+          <Card key={g.id}>
             <CardContent className="py-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">{g.name}</p>
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-muted-foreground">
                   {g.priority === "PRIMARY" ? "Primary goal" : "Secondary goal"}
                 </p>
               </div>

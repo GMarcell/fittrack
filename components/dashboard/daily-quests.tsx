@@ -23,10 +23,10 @@ type Quest = {
 };
 
 const STATUS_COLORS: Record<Quest["status"], string> = {
-  OFFERED: "bg-neutral-100 text-neutral-600",
-  PENDING: "bg-yellow-100 text-yellow-700",
-  COMPLETED: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
+  OFFERED: "bg-muted text-muted-foreground",
+  PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const STATUS_LABELS: Record<Quest["status"], string> = {
@@ -93,14 +93,14 @@ export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
           </Button>
         </div>
         {!hasPending && quests.some((q) => q.status === "OFFERED") && (
-          <p className="text-xs text-yellow-600 mt-1">
+          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
             ⚠ Accept at least 1 quest to keep your streak
           </p>
         )}
       </CardHeader>
       <CardContent className="space-y-3">
         {quests.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-4">
+          <p className="text-sm text-muted-foreground text-center py-4">
             No quests for today yet.
           </p>
         ) : (
@@ -110,7 +110,7 @@ export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
                 <div>
                   <p className="font-medium text-sm">{quest.title}</p>
                   {quest.description && (
-                    <p className="text-xs text-neutral-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {quest.description}
                     </p>
                   )}
@@ -122,7 +122,7 @@ export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
                 </span>
               </div>
 
-              <p className="text-xs text-neutral-600 bg-neutral-50 px-3 py-2 rounded">
+              <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded">
                 🎯 {quest.targetText}
               </p>
 

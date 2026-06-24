@@ -25,18 +25,18 @@ const STATUS_CONFIG: Record<
 > = {
   COMPLETED: {
     label: "Completed",
-    color: "bg-green-100 text-green-700",
+    color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     icon: "✓",
   },
-  FAILED: { label: "Failed", color: "bg-red-100 text-red-700", icon: "✗" },
+  FAILED: { label: "Failed", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "✗" },
   PENDING: {
     label: "In Progress",
-    color: "bg-yellow-100 text-yellow-700",
+    color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
     icon: "⏳",
   },
   OFFERED: {
     label: "Offered",
-    color: "bg-neutral-100 text-neutral-500",
+    color: "bg-muted text-muted-foreground",
     icon: "○",
   },
 };
@@ -60,7 +60,7 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
   if (quests.length === 0) {
     return (
       <Card>
-        <CardContent className="py-10 text-center text-neutral-400 text-sm">
+        <CardContent className="py-10 text-center text-muted-foreground text-sm">
           No quests logged yet — complete your first quest to see history here.
         </CardContent>
       </Card>
@@ -84,13 +84,13 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
           <div key={date} className="space-y-2">
             {/* Date header */}
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-neutral-600">{date}</p>
+              <p className="text-sm font-medium text-foreground">{date}</p>
               {total > 0 && (
                 <div className="flex gap-1">
                   {completed > 0 && (
                     <Badge
                       variant="secondary"
-                      className="text-xs bg-green-100 text-green-700"
+                      className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                     >
                       {completed} done
                     </Badge>
@@ -98,7 +98,7 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
                   {failed > 0 && (
                     <Badge
                       variant="secondary"
-                      className="text-xs bg-red-100 text-red-700"
+                      className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                     >
                       {failed} failed
                     </Badge>
@@ -115,7 +115,7 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
                 return (
                   <div
                     key={quest.id}
-                    className="border rounded-lg p-3 flex items-start gap-3 bg-white"
+                    className="border border-border rounded-lg p-3 flex items-start gap-3 bg-card"
                   >
                     <span className="text-base mt-0.5">{config.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -129,7 +129,7 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
                           {config.label}
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         🎯 {quest.targetText}
                       </p>
                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -138,10 +138,10 @@ export function QuestLog({ quests }: { quests: Quest[] }) {
                             key={r.id}
                             className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                               quest.status === "COMPLETED"
-                                ? "bg-green-50 text-green-700"
+                                ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
                                 : quest.status === "FAILED"
-                                  ? "bg-red-50 text-red-500"
-                                  : "bg-neutral-100 text-neutral-500"
+                                  ? "bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400"
+                                  : "bg-muted text-muted-foreground"
                             }`}
                           >
                             {quest.status === "COMPLETED"

@@ -39,16 +39,16 @@ export function ConsistencyChart({ sessions }: { sessions: Session[] }) {
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-6">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No sessions yet — start logging to see your consistency.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={data}>
-              <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <XAxis dataKey="week" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <Tooltip />
-              <Bar dataKey="count" fill="#171717" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="var(--foreground)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

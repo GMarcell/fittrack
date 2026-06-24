@@ -71,7 +71,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <span className="text-sm font-medium text-neutral-500">
+        <span className="text-sm font-medium text-muted-foreground">
           Lv.{level} · Rank {rank}
         </span>
       </div>

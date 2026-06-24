@@ -9,7 +9,11 @@ async function main() {
   const user = await prisma.user.upsert({
     where: { email: "xavior@example.com" },
     update: {},
-    create: { email: "xavior@example.com", name: "Xavior", passwordHash },
+    create: {
+      email: "xavior@example.com",
+      name: "Xavior",
+      password: passwordHash,
+    },
   });
 
   // 2. Default activity types

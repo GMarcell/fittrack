@@ -37,30 +37,30 @@ enum GoalStatus {
 }
 
 enum StatType {
-    STR // Strength
-    END // Endurance
-    AGI // Agility
-    SPD // Speed
-    PWR // Power
-    FLX // Flexibility
-    VIT // Vitality
-    DSC // Discipline
+    STR
+    END
+    AGI
+    SPD
+    PWR
+    FLX
+    VIT
+    DSC
 }
 
 enum QuestStatus {
-    OFFERED // generated, not yet accepted — no stat stakes
-    PENDING // accepted, in progress for the day — failure penalty applies if not completed
+    OFFERED
+    PENDING
     COMPLETED
     FAILED
 }
 
 model User {
-    id           String   @id @default(cuid())
-    email        String   @unique
-    name         String?
-    passwordHash String
-    timezone     String   @default("Asia/Jakarta") // IANA tz name — used to compute the 5 AM day boundary for quests
-    createdAt    DateTime @default(now())
+    id        String   @id @default(cuid())
+    email     String   @unique
+    name      String?
+    password  String
+    timezone  String   @default("Asia/Jakarta")
+    createdAt DateTime @default(now())
 
     activityTypes       ActivityType[]
     exercises           Exercise[]
@@ -131,7 +131,7 @@ model Exercise {
     name     String
     category ExerciseCategory
     unit     MetricUnit
-    statTags StatType[] // which stat(s) this exercise primarily trains
+    statTags StatType[]
 
     sessionExercises SessionExercise[]
 
@@ -178,44 +178,37 @@ model FitnessStandard {
     @@index([metric, level])
 }
 
-/// Current value per stat, per user — the "status window" snapshot.
-/// Initial value is set during onboarding (see OnboardingResponse), not a flat default.
 model Stat {
-    id     String   @id @default(cuid())
-    userId String
-    user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    type   StatType
-    value  Float // 0-100 scale; seeded from onboarding assessment, not a hardcoded default
-
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type      StatType
+    value     Float
     updatedAt DateTime @updatedAt
 
     @@unique([userId, type])
 }
 
-/// Raw answers from the one-time onboarding self-assessment, kept for
-/// traceability and so the value-mapping logic can be recalibrated later
-/// without re-asking the user.
 model OnboardingResponse {
     id          String   @id @default(cuid())
     userId      String
     user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    questionKey String // e.g. "max_pushups", "five_k_run", "training_days_per_week"
-    rawAnswer   String // user's raw input/selection, stored as text for flexibility
+    questionKey String
+    rawAnswer   String
     mappedStat  StatType
-    mappedValue Float // the resulting starting value contributed to that stat
+    mappedValue Float
     createdAt   DateTime @default(now())
 
     @@index([userId])
 }
 
-/// Append-only log of stat deltas, so progress over time can be charted
 model StatHistory {
     id        String   @id @default(cuid())
     userId    String
     user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     type      StatType
-    delta     Float // positive (quest/session gain) or negative (quest failure penalty)
-    reason    String // e.g. "Quest completed: 50 push-ups", "Quest failed: Morning run"
+    delta     Float
+    reason    String
     questId   String?
     quest     Quest?   @relation(fields: [questId], references: [id])
     createdAt DateTime @default(now())
@@ -223,18 +216,17 @@ model StatHistory {
     @@index([userId, type, createdAt])
 }
 
-/// AI-generated daily quest
 model Quest {
     id          String      @id @default(cuid())
     userId      String
     user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-    date        DateTime    @default(now()) // the day this quest belongs to
+    date        DateTime    @default(now())
     title       String
     description String?
-    targetText  String // e.g. "50 push-ups", "20-minute easy run"
+    targetText  String
     status      QuestStatus @default(OFFERED)
-    acceptedAt  DateTime? // set when user accepts — only PENDING+ quests carry stat stakes
-    sessionId   String? // optional link to the Session that fulfilled it
+    acceptedAt  DateTime?
+    sessionId   String?
     session     Session?    @relation(fields: [sessionId], references: [id])
     createdAt   DateTime    @default(now())
     resolvedAt  DateTime?
@@ -245,15 +237,13 @@ model Quest {
     @@index([userId, date])
 }
 
-/// Stat point value attached to a quest — applied as a gain on completion,
-/// and as a smaller penalty (negative) on failure
 model QuestStatReward {
     id              String   @id @default(cuid())
     questId         String
     quest           Quest    @relation(fields: [questId], references: [id], onDelete: Cascade)
     type            StatType
-    completionValue Float // points granted on completion — varies by quest difficulty, set by AI at generation time
-    failurePenalty  Float // points deducted on failure — scales with completionValue to hold the gain/penalty ratio constant (stored as positive, subtracted in logic)
+    completionValue Float
+    failurePenalty  Float
 
     @@index([questId])
 }

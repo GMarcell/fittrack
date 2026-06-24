@@ -31,6 +31,25 @@ type Props = {
   exercises: Exercise[];
 };
 
+type StatBoost = { type: string; value: number };
+
+const STAT_OPTIONS = [
+  { value: "STR", label: "Strength" },
+  { value: "END", label: "Endurance" },
+  { value: "AGI", label: "Agility" },
+  { value: "SPD", label: "Speed" },
+  { value: "PWR", label: "Power" },
+  { value: "FLX", label: "Flexibility" },
+  { value: "VIT", label: "Vitality" },
+  { value: "DSC", label: "Discipline" },
+];
+
+const INTENSITY_OPTIONS = [
+  { value: 1, label: "Light (+1)" },
+  { value: 2, label: "Moderate (+2)" },
+  { value: 3, label: "Hard (+3)" },
+];
+
 export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
   const router = useRouter();
   const [activityTypeId, setActivityTypeId] = useState("");
@@ -43,6 +62,7 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
   const [sessionExercises, setSessionExercises] = useState<
     SessionExerciseEntry[]
   >([]);
+  const [statBoosts, setStatBoosts] = useState<StatBoost[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -52,6 +72,25 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
 
   function removeExercise(index: number) {
     setSessionExercises((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function addStatBoost() {
+    if (statBoosts.length >= 2) return;
+    setStatBoosts((prev) => [...prev, { type: "STR", value: 1 }]);
+  }
+
+  function removeStatBoost(index: number) {
+    setStatBoosts((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateStatBoost(
+    index: number,
+    field: keyof StatBoost,
+    value: string | number,
+  ) {
+    setStatBoosts((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)),
+    );
   }
 
   function updateExercise(
@@ -90,6 +129,7 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
         rpe: rpe ? Number(rpe) : undefined,
         notes: notes || undefined,
         sessionExercises: sessionExercises.filter((ex) => ex.exerciseId),
+        statBoosts: statBoosts.length > 0 ? statBoosts : undefined,
       }),
     });
 
@@ -181,6 +221,78 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
             onChange={(e) => setRpe(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Stat Boosts */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>Stat Boost (optional, max 2)</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addStatBoost}
+            disabled={statBoosts.length >= 2}
+          >
+            + Add Boost
+          </Button>
+        </div>
+
+        {statBoosts.map((boost, index) => (
+          <Card key={index}>
+            <CardContent className="pt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Stat</Label>
+                  <Select
+                    value={boost.type}
+                    onValueChange={(val) => updateStatBoost(index, "type", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STAT_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Intensity</Label>
+                  <Select
+                    value={String(boost.value)}
+                    onValueChange={(val) =>
+                      updateStatBoost(index, "value", Number(val))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INTENSITY_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={String(o.value)}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-red-500 hover:text-red-700"
+                onClick={() => removeStatBoost(index)}
+              >
+                Remove
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Notes */}

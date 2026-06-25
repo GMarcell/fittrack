@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CreateQuestForm } from "../quests/create-quest-form";
 
 type Reward = {
   id: string;
@@ -24,8 +25,10 @@ type Quest = {
 
 const STATUS_COLORS: Record<Quest["status"], string> = {
   OFFERED: "bg-muted text-muted-foreground",
-  PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  PENDING:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  COMPLETED:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
@@ -36,11 +39,13 @@ const STATUS_LABELS: Record<Quest["status"], string> = {
   FAILED: "Failed",
 };
 
-export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
+export function DailyQuests() {
   const router = useRouter();
-  const [quests, setQuests] = useState<Quest[]>(initialQuests);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [regenerating, setRegenerating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function regenerate() {
     setRegenerating(true);
@@ -78,19 +83,51 @@ export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
     (q) => q.status === "PENDING" || q.status === "COMPLETED",
   );
 
+  async function fetchQuests() {
+    const res = await fetch("/api/quests/today");
+    const data = await res.json();
+    setQuests(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const res = await fetch("/api/quests/today");
+      const data = await res.json();
+      if (!cancelled) {
+        setQuests(data);
+        setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Today&apos;s Quests</CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={regenerate}
-            disabled={regenerating || hasPending}
-          >
-            {regenerating ? "Generating..." : "⟳ Refresh"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={regenerate}
+              disabled={regenerating || hasPending}
+            >
+              {regenerating ? "Generating..." : "⟳ Refresh"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCreateForm((v) => !v)}
+            >
+              {showCreateForm ? "Cancel" : "+ Custom"}
+            </Button>
+          </div>
         </div>
         {!hasPending && quests.some((q) => q.status === "OFFERED") && (
           <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
@@ -98,6 +135,17 @@ export function DailyQuests({ initialQuests }: { initialQuests: Quest[] }) {
           </p>
         )}
       </CardHeader>
+      {showCreateForm && (
+        <div className="px-6 pb-2">
+          <CreateQuestForm
+            onCreated={() => {
+              setShowCreateForm(false);
+              fetchQuests();
+            }}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </div>
+      )}
       <CardContent className="space-y-3">
         {quests.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">

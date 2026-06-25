@@ -2,29 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { ConsistencyChart } from "@/components/dashboard/consistency-chart";
 import { BenchmarkChart } from "@/components/dashboard/benchmark-chart";
-import { ActivityMix } from "@/components/dashboard/activity-mix";
 import { GoalCountdown } from "@/components/dashboard/goal-countdown";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
 import { FitnessRadarChart } from "@/components/dashboard/radar-chart";
 import { DailyQuests } from "@/components/dashboard/daily-quests";
-import { generateQuestsForUser } from "@/lib/quest";
+import { WeeklyProgress } from "@/components/dashboard/weekly-progress";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Fetch today's quests — generate if none exist
-  let quests = await prisma.quest.findMany({
-    where: { userId: user.id, date: { gte: today } },
-    include: { rewards: true },
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (quests.length === 0) {
-    quests = await generateQuestsForUser(user.id);
-  }
 
   const [sessions, goals, benchmarks, standards, stats] = await Promise.all([
     prisma.session.findMany({
@@ -50,6 +35,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  // Hunter Level + Rank
   const avgStat = stats.length
     ? stats.reduce((sum, s) => sum + s.value, 0) / stats.length
     : 0;
@@ -69,19 +55,31 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-sm font-medium px-3 py-1 bg-neutral-900 text-white rounded-full">
           Lv.{level} · Rank {rank}
         </span>
       </div>
+
+      {/* Goal countdowns */}
       <GoalCountdown goals={goals} />
-      <DailyQuests initialQuests={quests} />
-      <AiSuggestion />
-      <FitnessRadarChart stats={stats} />
-      <ConsistencyChart sessions={sessions} />
+
+      {/* Radar + Weekly Progress side by side on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FitnessRadarChart stats={stats} />
+        <div className="space-y-4">
+          <WeeklyProgress sessions={sessions} target={5} />
+          <AiSuggestion />
+        </div>
+      </div>
+
+      {/* Daily Quests */}
+      <DailyQuests />
+
+      {/* Benchmark Progress */}
       <BenchmarkChart benchmarks={benchmarks} standards={standards} />
-      <ActivityMix sessions={sessions} />
     </div>
   );
 }

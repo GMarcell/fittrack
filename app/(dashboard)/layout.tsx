@@ -55,6 +55,12 @@ export default async function DashboardLayout({
             >
               Quests
             </Link>
+            <Link
+              href="/stats"
+              className="text-sm text-neutral-600 hover:text-black"
+            >
+              Stats
+            </Link>
           </div>
         </div>
         <div className="flex items-center gap-2">

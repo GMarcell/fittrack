@@ -24,36 +24,37 @@ export default async function DashboardLayout({
   await runQuestFailureSweep(user.id);
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-white/5 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 px-6 py-4 flex items-center justify-between shadow-lg shadow-black/30">
-        <div className="flex items-center gap-8">
-          {/* Brand */}
-          <div className="flex items-center gap-2.5">
-            <div className="size-2 rounded-full bg-navy-500 shadow-lg shadow-navy-500/30" />
-            <span className="font-bold text-base tracking-tight text-white/90">
-              FitTrack
-            </span>
-          </div>
+    <div className="min-h-screen bg-neutral-50">
+      {/* Top nav — desktop */}
+      <nav className="border-b bg-white px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-base">FitTrack</span>
 
-          {/* Nav links */}
-          <div className="flex items-center gap-1">
+          {/* Desktop links */}
+          <div className="hidden sm:flex items-center gap-4">
+            <Link
+              href="/"
+              className="text-sm text-neutral-600 hover:text-black"
+            >
+              Dashboard
+            </Link>
             <Link
               href="/sessions"
-              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
+              className="text-sm text-neutral-600 hover:text-black"
             >
               Sessions
             </Link>
             <Link
-              href="/goals"
-              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
-            >
-              Goals
-            </Link>
-            <Link
               href="/quests"
-              className="px-3 py-1.5 text-sm text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all duration-200"
+              className="text-sm text-neutral-600 hover:text-black"
             >
               Quests
+            </Link>
+            <Link
+              href="/goals"
+              className="text-sm text-neutral-600 hover:text-black"
+            >
+              Goals
             </Link>
             <Link
               href="/stats"
@@ -62,15 +63,67 @@ export default async function DashboardLayout({
               Stats
             </Link>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild size="sm">
-            <Link href="/sessions/new">Log Session</Link>
-          </Button>
-          <LogoutButton />
+
+          <div className="hidden sm:flex items-center gap-2">
+            <Button asChild size="sm">
+              <Link href="/sessions/new">Log Session</Link>
+            </Button>
+            <LogoutButton />
+          </div>
+
+          {/* Mobile: just log session + logout */}
+          <div className="flex sm:hidden items-center gap-2">
+            <Button asChild size="sm">
+              <Link href="/sessions/new">+ Log</Link>
+            </Button>
+            <LogoutButton />
+          </div>
         </div>
       </nav>
-      <main className="mx-auto max-w-2xl p-6">{children}</main>
+
+      {/* Bottom tab bar — mobile only */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t sm:hidden z-50">
+        <div className="grid grid-cols-5 h-14">
+          <Link
+            href="/"
+            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 hover:text-black"
+          >
+            <span className="text-lg">⊞</span>
+            <span className="text-[10px]">Home</span>
+          </Link>
+          <Link
+            href="/quests"
+            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 hover:text-black"
+          >
+            <span className="text-lg">⚔</span>
+            <span className="text-[10px]">Quests</span>
+          </Link>
+          <Link
+            href="/sessions/new"
+            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 hover:text-black"
+          >
+            <span className="text-lg">＋</span>
+            <span className="text-[10px]">Log</span>
+          </Link>
+          <Link
+            href="/goals"
+            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 hover:text-black"
+          >
+            <span className="text-lg">◎</span>
+            <span className="text-[10px]">Goals</span>
+          </Link>
+          <Link
+            href="/stats"
+            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 hover:text-black"
+          >
+            <span className="text-lg">↗</span>
+            <span className="text-[10px]">Stats</span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Main content — add bottom padding on mobile for tab bar */}
+      <main className="mx-auto max-w-2xl p-4 pb-20 sm:pb-6">{children}</main>
     </div>
   );
 }

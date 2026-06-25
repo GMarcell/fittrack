@@ -1,10 +1,15 @@
-import { PrismaClient, ExerciseCategory, MetricUnit } from "@prisma/client";
+import {
+  PrismaClient,
+  ExerciseCategory,
+  MetricUnit,
+  StatType,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1. Demo user (replace with real auth-created user in production)
+  // 1. Demo user
   const passwordHash = await bcrypt.hash("password123", 10);
   const user = await prisma.user.upsert({
     where: { email: "xavior@example.com" },
@@ -34,7 +39,7 @@ async function main() {
     activityTypes[name] = at.id;
   }
 
-  // 3. Default goal (rugby example, optional — user can delete/edit)
+  // 3. Default goal
   await prisma.goal.upsert({
     where: { id: "seed-goal-rugby" },
     update: {},
@@ -47,29 +52,145 @@ async function main() {
     },
   });
 
-  // 4. Starter bodyweight exercise library
+  // 4. Exercise library with statTags
   const exercises: {
     name: string;
     category: ExerciseCategory;
     unit: MetricUnit;
+    statTags: StatType[];
   }[] = [
-    { name: "Push-ups", category: "STRENGTH", unit: "REPS" },
-    { name: "Pull-ups", category: "STRENGTH", unit: "REPS" },
-    { name: "Bodyweight Squats", category: "STRENGTH", unit: "REPS" },
-    { name: "Plank", category: "CONDITIONING", unit: "SECONDS" },
-    { name: "Burpees", category: "CONDITIONING", unit: "REPS" },
-    { name: "40m Sprint", category: "CONDITIONING", unit: "SECONDS" },
-    { name: "5km Run", category: "CONDITIONING", unit: "MINUTES" },
+    // Strength
+    {
+      name: "Push-ups",
+      category: "STRENGTH",
+      unit: "REPS",
+      statTags: [StatType.STR, StatType.PWR],
+    },
+    {
+      name: "Pull-ups",
+      category: "STRENGTH",
+      unit: "REPS",
+      statTags: [StatType.STR],
+    },
+    {
+      name: "Bodyweight Squats",
+      category: "STRENGTH",
+      unit: "REPS",
+      statTags: [StatType.STR, StatType.PWR],
+    },
+    {
+      name: "Dips",
+      category: "STRENGTH",
+      unit: "REPS",
+      statTags: [StatType.STR],
+    },
+    {
+      name: "Pike Push-ups",
+      category: "STRENGTH",
+      unit: "REPS",
+      statTags: [StatType.STR],
+    },
+
+    // Conditioning
+    {
+      name: "Plank",
+      category: "CONDITIONING",
+      unit: "SECONDS",
+      statTags: [StatType.END, StatType.VIT],
+    },
+    {
+      name: "Burpees",
+      category: "CONDITIONING",
+      unit: "REPS",
+      statTags: [StatType.END, StatType.PWR],
+    },
+    {
+      name: "40m Sprint",
+      category: "CONDITIONING",
+      unit: "SECONDS",
+      statTags: [StatType.SPD, StatType.PWR],
+    },
+    {
+      name: "5km Run",
+      category: "CONDITIONING",
+      unit: "MINUTES",
+      statTags: [StatType.END],
+    },
+    {
+      name: "Jump Rope",
+      category: "CONDITIONING",
+      unit: "SECONDS",
+      statTags: [StatType.END, StatType.AGI],
+    },
+    {
+      name: "Mountain Climbers",
+      category: "CONDITIONING",
+      unit: "REPS",
+      statTags: [StatType.END, StatType.VIT],
+    },
+
+    // Skill
+    {
+      name: "Tackle Drills",
+      category: "SKILL",
+      unit: "REPS",
+      statTags: [StatType.AGI, StatType.PWR],
+    },
+    {
+      name: "Agility Ladder",
+      category: "SKILL",
+      unit: "SECONDS",
+      statTags: [StatType.AGI, StatType.SPD],
+    },
+    {
+      name: "Shuttle Runs",
+      category: "SKILL",
+      unit: "REPS",
+      statTags: [StatType.AGI, StatType.SPD],
+    },
+    {
+      name: "Balance Drills",
+      category: "SKILL",
+      unit: "SECONDS",
+      statTags: [StatType.AGI],
+    },
+
+    // Flexibility
+    {
+      name: "Yoga Flow",
+      category: "FLEXIBILITY",
+      unit: "MINUTES",
+      statTags: [StatType.FLX, StatType.VIT],
+    },
+    {
+      name: "Static Stretching",
+      category: "FLEXIBILITY",
+      unit: "SECONDS",
+      statTags: [StatType.FLX],
+    },
+    {
+      name: "Hip Flexor Stretch",
+      category: "FLEXIBILITY",
+      unit: "SECONDS",
+      statTags: [StatType.FLX],
+    },
+    {
+      name: "Foam Rolling",
+      category: "FLEXIBILITY",
+      unit: "MINUTES",
+      statTags: [StatType.VIT, StatType.FLX],
+    },
   ];
+
   for (const ex of exercises) {
     await prisma.exercise.upsert({
       where: { userId_name: { userId: user.id, name: ex.name } },
-      update: {},
+      update: { statTags: ex.statTags },
       create: { userId: user.id, ...ex },
     });
   }
 
-  // 5. Seeded general fitness standards (sample reference data — expand as needed)
+  // 5. Fitness standards
   const standards = [
     {
       metric: "Max Push-ups",
@@ -144,6 +265,7 @@ async function main() {
       value: 19,
     },
   ];
+
   for (const s of standards) {
     const existing = await prisma.fitnessStandard.findFirst({
       where: { metric: s.metric, level: s.level },

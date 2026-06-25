@@ -57,13 +57,6 @@ export default async function DashboardLayout({
             </Link>
           </div>
         </div>
-        <Button
-          asChild
-          size="sm"
-          className="shadow-md shadow-navy-500/20 bg-navy-500 hover:bg-navy-400 text-white"
-        >
-          <Link href="/sessions/new">Log Session</Link>
-        </Button>
         <div className="flex items-center gap-2">
           <Button asChild size="sm">
             <Link href="/sessions/new">Log Session</Link>

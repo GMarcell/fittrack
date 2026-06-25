@@ -8,7 +8,7 @@ export function LogoutButton() {
     <Button
       variant="ghost"
       size="sm"
-      className="text-neutral-500 hover:text-white"
+      className="text-muted-foreground hover:text-foreground"
       onClick={() => signOut({ callbackUrl: "/login" })}
     >
       Log out

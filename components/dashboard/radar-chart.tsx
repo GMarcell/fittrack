@@ -57,15 +57,15 @@ export function FitnessRadarChart({ stats }: { stats: Stat[] }) {
                 if (!active || !payload?.length) return null;
                 const d = payload[0];
                 return (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-3 py-2 shadow-md text-xs">
-                    <p className="font-semibold text-neutral-800">
+                  <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-md text-xs">
+                    <p className="font-semibold text-foreground">
                       {d.payload.attribute}
                     </p>
-                    <p className="text-neutral-500 mt-0.5">
-                      <span className="text-neutral-900 font-bold text-sm">
+                    <p className="text-muted-foreground mt-0.5">
+                      <span className="text-foreground font-bold text-sm">
                         {d.value}
                       </span>
-                      <span className="text-neutral-400">/100</span>
+                      <span className="text-muted-foreground/60">/100</span>
                     </p>
                   </div>
                 );
@@ -76,7 +76,7 @@ export function FitnessRadarChart({ stats }: { stats: Stat[] }) {
         <div className="text-center mt-2">
           <Link
             href="/stats"
-            className="text-xs text-neutral-400 hover:text-black underline"
+            className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
           >
             View stat history →
           </Link>

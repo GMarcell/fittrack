@@ -33,28 +33,28 @@ export function WeeklyProgress({
         <div className="flex items-end justify-between">
           <div>
             <span className="text-4xl font-bold">{count}</span>
-            <span className="text-neutral-400 text-sm ml-1">
+            <span className="text-muted-foreground/60 text-sm ml-1">
               / {target} sessions
             </span>
           </div>
-          <span className="text-sm text-neutral-500 mb-1">{percentage}%</span>
+          <span className="text-sm text-muted-foreground mb-1">{percentage}%</span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-neutral-100 rounded-full h-2.5">
+        <div className="w-full bg-muted rounded-full h-2.5">
           <div
             className={`h-2.5 rounded-full transition-all duration-500 ${
               percentage >= 100
                 ? "bg-green-500"
                 : percentage >= 60
                   ? "bg-yellow-400"
-                  : "bg-neutral-900"
+                  : "bg-primary"
             }`}
             style={{ width: `${percentage}%` }}
           />
         </div>
 
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-muted-foreground">
           {percentage >= 100
             ? "🎉 Weekly target hit — great work!"
             : remaining === 1

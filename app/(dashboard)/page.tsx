@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <span className="text-sm font-medium px-3 py-1 bg-neutral-900 text-white rounded-full">
+        <span className="text-sm font-medium px-3 py-1 bg-navy-500 text-white rounded-full shadow-lg shadow-navy-500/30">
           Lv.{level} · Rank {rank}
         </span>
       </div>

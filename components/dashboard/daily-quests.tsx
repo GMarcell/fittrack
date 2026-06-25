@@ -201,7 +201,7 @@ export function DailyQuests() {
                 {quest.status === "PENDING" && (
                   <Button
                     size="sm"
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
                     disabled={actionLoading === quest.id}
                     onClick={() => complete(quest.id)}
                   >

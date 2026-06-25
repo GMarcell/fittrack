@@ -89,8 +89,8 @@ export function StatHistoryChart({
             onClick={() => setSelected(s.type)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               selected === s.type
-                ? "bg-neutral-900 text-white"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             }`}
           >
             {STAT_LABELS[s.type]} ({Math.round(s.value)})
@@ -110,15 +110,14 @@ export function StatHistoryChart({
               style={{ color: STAT_COLORS[selected] }}
             >
               {Math.round(currentValue)}
-              <span className="text-sm font-normal text-neutral-400">/100</span>
+              <span className="text-sm font-normal text-muted-foreground/60">/100</span>
             </span>
           </div>
         </CardHeader>
         <CardContent>
-          {chartData.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8">
-              No history yet for {STAT_LABELS[selected]} — complete quests or
-              log sessions to see progress.
+          {chartData.length === 0 ? (              <p className="text-sm text-muted-foreground text-center py-8">
+                No history yet for {STAT_LABELS[selected]} — complete quests or
+                log sessions to see progress.
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -139,26 +138,26 @@ export function StatHistoryChart({
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload;
                     return (
-                      <div className="bg-white border rounded-lg p-3 shadow text-xs space-y-1">
+                      <div className="bg-popover border border-border rounded-lg p-3 shadow-md text-xs space-y-1">
                         <p className="font-medium">{d.date}</p>
                         <p>
                           Value: <span className="font-bold">{d.value}</span>
                         </p>
                         <p
                           className={
-                            d.delta > 0 ? "text-green-600" : "text-red-500"
+                            d.delta > 0            ? "text-green-500" : "text-red-500"
                           }
                         >
                           {d.delta > 0 ? `+${d.delta}` : d.delta}
                         </p>
-                        <p className="text-neutral-400 max-w-48 truncate">
+                        <p className="text-muted-foreground max-w-48 truncate">
                           {d.reason}
                         </p>
                       </div>
                     );
                   }}
                 />
-                <ReferenceLine y={50} stroke="#e5e7eb" strokeDasharray="4 4" />
+                <ReferenceLine y={50} stroke="#ffffff1a" strokeDasharray="4 4" />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -179,8 +178,7 @@ export function StatHistoryChart({
           <CardTitle className="text-base">Recent Events</CardTitle>
         </CardHeader>
         <CardContent>
-          {chartData.length === 0 ? (
-            <p className="text-sm text-neutral-400">No events yet.</p>
+          {chartData.length === 0 ? (              <p className="text-sm text-muted-foreground">No events yet.</p>
           ) : (
             <div className="space-y-2">
               {[...chartData]
@@ -194,16 +192,16 @@ export function StatHistoryChart({
                     <div className="flex items-center gap-2 min-w-0">
                       <span
                         className={`text-xs font-bold shrink-0 ${
-                          entry.delta > 0 ? "text-green-600" : "text-red-500"
+                          entry.delta > 0            ? "text-green-500" : "text-red-500"
                         }`}
                       >
                         {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
                       </span>
-                      <span className="text-neutral-500 truncate">
+                      <span className="text-muted-foreground truncate">
                         {entry.reason}
                       </span>
                     </div>
-                    <span className="text-xs text-neutral-400 shrink-0 ml-2">
+                    <span className="text-xs text-muted-foreground/70 shrink-0 ml-2">
                       {entry.date}
                     </span>
                   </div>

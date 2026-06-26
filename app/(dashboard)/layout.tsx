@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { runQuestFailureSweep } from "@/lib/quest-sweep";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -71,6 +72,7 @@ export default async function DashboardLayout({
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
+            <ThemeToggle />
             <Button asChild size="sm">
               <Link href="/sessions/new" transitionTypes={["nav-forward"]}>Log Session</Link>
             </Button>
@@ -79,6 +81,7 @@ export default async function DashboardLayout({
 
           {/* Mobile: just log session + logout */}
           <div className="flex sm:hidden items-center gap-2">
+            <ThemeToggle />
             <Button asChild size="sm">
               <Link href="/sessions/new" transitionTypes={["nav-forward"]}>+ Log</Link>
             </Button>

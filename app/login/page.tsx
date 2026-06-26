@@ -25,11 +25,11 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-background via-navy-950 to-background flex items-center justify-center p-4">
+    <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2.5">
-            <div className="size-3 rounded-full bg-navy-500 shadow-lg shadow-navy-500/40" />
+            <div className="size-3 rounded-full bg-primary shadow-lg shadow-primary/40" />
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               FitTrack
             </h1>
@@ -44,26 +44,26 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-border bg-background text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full border border-border bg-card text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-border bg-background text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full border border-border bg-card text-foreground p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {error && <p className="text-destructive text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-navy-500 text-white p-2.5 rounded-lg text-sm font-medium hover:bg-navy-400 transition-colors shadow-lg shadow-navy-500/20"
+            className="w-full bg-primary text-primary-foreground p-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
           >
             Log in
           </button>
         </form>
-        <p className="text-center text-sm text-neutral-500 mt-4">
+        <p className="text-center text-sm text-muted-foreground mt-4">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="underline hover:text-white">
+          <Link href="/signup" className="underline hover:text-foreground">
             Sign up
           </Link>
         </p>

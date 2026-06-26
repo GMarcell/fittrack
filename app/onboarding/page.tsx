@@ -52,13 +52,13 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-navy-950 to-background flex items-center justify-center p-4">
+    <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2.5">
-            <div className="size-3 rounded-full bg-navy-500 shadow-lg shadow-navy-500/40" />
-            <h1 className="text-2xl font-bold tracking-tight">FitTrack</h1>
+            <div className="size-3 rounded-full bg-primary shadow-lg shadow-primary/40" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">FitTrack</h1>
           </div>
           <p className="text-sm text-muted-foreground">
             The System is initializing your stats...
@@ -75,7 +75,7 @@ export default function OnboardingPage() {
           </div>
           <div className="w-full bg-muted rounded-full h-1.5">
             <div
-              className="bg-navy-500 h-1.5 rounded-full transition-all duration-300 shadow-lg shadow-navy-500/30"
+              className="bg-primary h-1.5 rounded-full transition-all duration-300 shadow-lg shadow-primary/30"
               style={{ width: `${progress}%` }}
             />
           </div>

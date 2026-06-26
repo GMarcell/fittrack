@@ -59,11 +59,11 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-background via-navy-950 to-background flex items-center justify-center p-4">
+    <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold">FitTrack</h1>
-          <p className="text-sm text-neutral-500">Create your hunter profile</p>
+          <p className="text-sm text-muted-foreground">Create your hunter profile</p>
         </div>
 
         <Card>
@@ -111,9 +111,9 @@ export default function SignupPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-neutral-500">
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="underline hover:text-black">
+          <Link href="/login" className="underline hover:text-foreground">
             Log in
           </Link>
         </p>

@@ -217,19 +217,21 @@ model StatHistory {
 }
 
 model Quest {
-    id          String      @id @default(cuid())
-    userId      String
-    user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-    date        DateTime    @default(now())
-    title       String
-    description String?
-    targetText  String
-    status      QuestStatus @default(OFFERED)
-    acceptedAt  DateTime?
-    sessionId   String?
-    session     Session?    @relation(fields: [sessionId], references: [id])
-    createdAt   DateTime    @default(now())
-    resolvedAt  DateTime?
+    id             String      @id @default(cuid())
+    userId         String
+    user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    date           DateTime    @default(now())
+    title          String
+    description    String?
+    targetText     String
+    status         QuestStatus @default(OFFERED)
+    acceptedAt     DateTime?
+    sessionId      String?
+    session        Session?    @relation(fields: [sessionId], references: [id])
+    createdAt      DateTime    @default(now())
+    resolvedAt     DateTime?
+    completionNote String?
+    verified       Boolean     @default(false)
 
     rewards    QuestStatReward[]
     statEvents StatHistory[]

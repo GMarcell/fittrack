@@ -7,7 +7,13 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
   const user = await getCurrentUser();
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json();
+  if (!body.completionNote || body.completionNote.trim().length < 5) {
+    return NextResponse.json(
+      { error: "Please describe what you did to complete this quest" },
+      { status: 400 },
+    );
+  }
   const { sessionId } = body;
 
   const quest = await prisma.quest.findFirst({

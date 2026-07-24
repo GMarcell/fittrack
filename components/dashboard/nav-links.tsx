@@ -10,6 +10,7 @@ const DESKTOP_LINKS: NavItem[] = [
   { href: "/", label: "Dashboard", transitionType: "nav-back" },
   { href: "/sessions", label: "Sessions", transitionType: "nav-forward" },
   { href: "/quests", label: "Quests", transitionType: "nav-forward" },
+  { href: "/benchmarks", label: "Benchmarks", transitionType: "nav-forward" },
   { href: "/goals", label: "Goals", transitionType: "nav-forward" },
   { href: "/stats", label: "Stats", transitionType: "nav-forward" },
 ];
@@ -20,6 +21,7 @@ const MOBILE_TABS: MobileTab[] = [
   { href: "/", label: "Home", icon: "⊞", transitionType: "nav-back" },
   { href: "/quests", label: "Quests", icon: "⚔", transitionType: "nav-forward" },
   { href: "/sessions/new", label: "Log", icon: "＋", transitionType: "nav-forward" },
+  { href: "/benchmarks", label: "Benchmarks", icon: "📊", transitionType: "nav-forward" },
   { href: "/goals", label: "Goals", icon: "◎", transitionType: "nav-forward" },
   { href: "/stats", label: "Stats", icon: "↗", transitionType: "nav-forward" },
 ];
@@ -58,7 +60,7 @@ export function MobileTabs() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border sm:hidden z-50">
-      <div className="grid grid-cols-5 h-14">
+      <div className="grid grid-cols-6 h-14">
         {MOBILE_TABS.map((tab) => {
           const active = isActive(tab.href, pathname);
           return (
@@ -74,10 +76,10 @@ export function MobileTabs() {
               )}
             >
               {active && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-full" />
               )}
-              <span className="text-lg">{tab.icon}</span>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-base">{tab.icon}</span>
+              <span className="text-[9px] font-medium">{tab.label}</span>
             </Link>
           );
         })}

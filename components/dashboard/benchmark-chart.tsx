@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LogBenchmarkForm } from "@/components/benchmarks/log-benchmark-form";
 import {
   LineChart,
   Line,
@@ -57,30 +59,50 @@ export function BenchmarkChart({
     Excellent: "#facc15",
   };
 
+  const [showForm, setShowForm] = useState(false);
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Benchmark Progress</CardTitle>
-          {metrics.length > 0 && (
-            <Select
-              value={selected}
-              onValueChange={setSelected}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowForm((v) => !v)}
             >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {metrics.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+              {showForm ? "Cancel" : "+ Log Benchmark"}
+            </Button>
+            {metrics.length > 0 && (
+              <Select
+                value={selected}
+                onValueChange={setSelected}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {metrics.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
       </CardHeader>
+      {showForm && (
+        <CardContent className="pb-0">
+          <LogBenchmarkForm
+            onDone={() => {
+              setShowForm(false);
+            }}
+          />
+        </CardContent>
+      )}
       <CardContent>
         {filtered.length === 0 ? (
           <div className="text-center py-8">

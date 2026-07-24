@@ -132,6 +132,7 @@ export function LogBenchmarkForm({ onDone }: Props) {
     setMetric(value);
     clearFieldError("metric");
     clearFieldError("value");
+    clearFieldError("unit");
     if (value !== "Custom") {
       const suggested = getSuggestedUnit(value);
       if (suggested) setUnit(suggested);

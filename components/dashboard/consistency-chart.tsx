@@ -12,12 +12,20 @@ import {
 
 type Session = { date: Date | string };
 
+function getMonday(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = day === 0 ? 6 : day - 1; // days since Monday
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function groupByWeek(sessions: Session[]) {
   const weeks: Record<string, number> = {};
   sessions.forEach((s) => {
     const d = new Date(s.date);
-    const start = new Date(d);
-    start.setDate(d.getDate() - d.getDay());
+    const start = getMonday(d);
     const key = start.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "short",

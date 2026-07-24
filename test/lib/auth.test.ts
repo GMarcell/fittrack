@@ -10,8 +10,9 @@ describe("auth module", () => {
     expect(authModule).toHaveProperty("getCurrentUser");
   });
 
-  it("getCurrentUser rejects when not authenticated", async () => {
+  it("getCurrentUser returns null when not authenticated", async () => {
     const { getCurrentUser } = await import("@/lib/auth");
-    await expect(getCurrentUser()).rejects.toThrow();
+    const result = await getCurrentUser();
+    expect(result).toBeNull();
   });
 });

@@ -92,7 +92,15 @@ Respond ONLY with a valid JSON array, no markdown, no explanation:
 
   const text = completion.choices[0]?.message?.content ?? "[]";
   const clean = text.replace(/```json|```/g, "").trim();
-  const parsed = JSON.parse(clean) as {
+
+  // Extract JSON array from the response (handle LLM response variations)
+  const jsonMatch = clean.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (!jsonMatch) {
+    console.error("No valid JSON array in AI response:", clean);
+    return [];
+  }
+
+  let parsed: {
     title: string;
     description: string;
     targetText: string;
@@ -103,42 +111,57 @@ Respond ONLY with a valid JSON array, no markdown, no explanation:
     }[];
   }[];
 
-  // Get today's date boundary (midnight UTC for now, 5AM local is a v2 refinement)
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (err) {
+    console.error("Failed to parse AI response as JSON:", err, clean);
+    return [];
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return [];
+  }
+
+  // Get today's date boundary (local midnight)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Delete any existing OFFERED quests for today before regenerating
-  await prisma.quest.deleteMany({
-    where: {
-      userId,
-      status: QuestStatus.OFFERED,
-      date: { gte: today },
-    },
-  });
+  // Delete any existing OFFERED quests for today before regenerating (inside a transaction)
+  const quests = await prisma.$transaction(async (tx) => {
+    await tx.quest.deleteMany({
+      where: {
+        userId,
+        status: QuestStatus.OFFERED,
+        date: { gte: today },
+      },
+    });
 
-  // Create new quests with rewards
-  const quests = await Promise.all(
-    parsed.map((q) =>
-      prisma.quest.create({
-        data: {
-          userId,
-          date: new Date(),
-          title: q.title,
-          description: q.description,
-          targetText: q.targetText,
-          status: QuestStatus.OFFERED,
-          rewards: {
-            create: q.rewards.map((r) => ({
-              type: r.type,
-              completionValue: r.completionValue,
-              failurePenalty: r.failurePenalty,
-            })),
+    // Create new quests with rewards
+    const newQuests = await Promise.all(
+      parsed.map((q) =>
+        tx.quest.create({
+          data: {
+            userId,
+            date: new Date(),
+            title: q.title,
+            description: q.description,
+            targetText: q.targetText,
+            status: QuestStatus.OFFERED,
+            rewards: {
+              create: q.rewards.map((r) => ({
+                type: r.type,
+                completionValue: r.completionValue,
+                failurePenalty: r.failurePenalty,
+              })),
+            },
           },
-        },
-        include: { rewards: true },
-      }),
-    ),
-  );
+          include: { rewards: true },
+        }),
+      ),
+    );
+
+    return newQuests;
+  });
 
   return quests;
 }

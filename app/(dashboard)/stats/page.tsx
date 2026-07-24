@@ -1,10 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { ConsistencyChart } from "@/components/dashboard/consistency-chart";
 import { StatHistoryChart } from "@/components/dashboard/stat-history-chart";
 
+export const metadata: Metadata = {
+  title: "Stats & Progress — FitTrack",
+};
+
 export default async function StatsPage() {
   const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   const [stats, history, sessions] = await Promise.all([
     prisma.stat.findMany({
@@ -14,10 +21,12 @@ export default async function StatsPage() {
     prisma.statHistory.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
+      take: 500,
     }),
     prisma.session.findMany({
       where: { userId: user.id },
-      orderBy: { date: "asc" },
+      orderBy: { date: "desc" },
+      take: 200,
       include: { activityType: true },
     }),
   ]);

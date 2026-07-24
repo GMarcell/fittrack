@@ -5,6 +5,9 @@ import { createSessionSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(req.url);
   const goalId = searchParams.get("goalId") ?? undefined;
   const activityTypeId = searchParams.get("activityTypeId") ?? undefined;
@@ -24,6 +27,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await req.json();
   const parsed = createSessionSchema.safeParse(body);
 

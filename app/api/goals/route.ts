@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? "active";
 
@@ -42,10 +45,10 @@ export async function POST(req: Request) {
 
   const goal = await prisma.goal.create({
     data: {
-      userId: user?.id ?? "",
+      userId: user.id,
       name: parsed.data.name,
       priority: parsed.data.priority,
-      targetDate: parsed.data?.targetDate ?? null,
+      targetDate: parsed.data.targetDate ?? null,
       notes: parsed.data.notes,
     },
   });

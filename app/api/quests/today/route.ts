@@ -6,6 +6,9 @@ import { generateQuestsForUser } from "@/lib/quest";
 
 export async function GET() {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -36,20 +37,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 });
 
-export async function getCurrentUser() {
-  const session = await auth();
+export const getCurrentUser = cache(async () => {
+  try {
+    const session = await auth();
 
-  if (!session?.user?.email) {
-    throw new Error("Not authenticated");
+    if (!session?.user?.email) {
+      return null;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    return user;
+  } catch {
+    return null;
   }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  return user;
-}
+});

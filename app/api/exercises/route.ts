@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   const exercise = await prisma.exercise.create({
     data: {
-      userId: user?.id ?? "",
+      userId: user.id,
       name: parsed.data.name,
       category: parsed.data.category,
       unit: parsed.data.unit,

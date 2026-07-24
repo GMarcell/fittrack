@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   LineChart,
   Line,
   XAxis,
@@ -55,37 +62,64 @@ export function BenchmarkChart({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Benchmark Progress</CardTitle>
-          <select
-            className="text-sm border border-border rounded px-2 py-1 bg-background text-foreground"
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-          >
-            {metrics.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+          {metrics.length > 0 && (
+            <Select
+              value={selected}
+              onValueChange={setSelected}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {metrics.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         {filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No benchmark data yet.
-          </p>
+          <div className="text-center py-8">
+            <p className="text-3xl mb-2">📊</p>
+            <p className="text-sm text-muted-foreground">
+              No benchmark data yet.{" "}
+              <span className="block mt-1">Log your first benchmark to start tracking progress.</span>
+            </p>
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={filtered}>
-              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <YAxis tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <Tooltip />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
               <Legend />
               <Line
                 type="monotone"
                 dataKey="value"
                 stroke="var(--foreground)"
                 strokeWidth={2}
-                dot={{ r: 4 }}
+                dot={{ r: 4, fill: "var(--foreground)" }}
+                activeDot={{ r: 6, fill: "var(--foreground)" }}
                 name="Your score"
               />
               {relevantStandards.map((s) => (
@@ -94,7 +128,11 @@ export function BenchmarkChart({
                   y={s.value}
                   stroke={LEVEL_COLORS[s.level] ?? "#e5e7eb"}
                   strokeDasharray="4 4"
-                  label={{ value: s.level, fontSize: 11, fill: "var(--muted-foreground)" }}
+                  label={{
+                    value: s.level,
+                    fontSize: 11,
+                    fill: "var(--muted-foreground)",
+                  }}
                 />
               ))}
             </LineChart>

@@ -1,13 +1,15 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 
 type Session = { date: Date | string };
 
 function getThisWeekCount(sessions: Session[]) {
   const now = new Date();
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
+  // getDay() returns 0 (Sun) .. 6 (Sat). Shift so Monday = 0.
+  const dayOfWeek = now.getDay();
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  startOfWeek.setDate(now.getDate() - daysSinceMonday);
   startOfWeek.setHours(0, 0, 0, 0);
 
   return sessions.filter((s) => new Date(s.date) >= startOfWeek).length;

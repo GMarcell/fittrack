@@ -190,7 +190,7 @@ describe("POST /api/quests/[id]/complete", () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ completionNote: "Did 50 push-ups and 3 sets of pull-ups as planned" }),
       },
     );
 

@@ -20,6 +20,9 @@ const createQuestSchema = z.object({
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await req.json();
   const parsed = createQuestSchema.safeParse(body);
 

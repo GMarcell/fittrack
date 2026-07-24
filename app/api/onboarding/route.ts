@@ -11,6 +11,9 @@ import { StatType } from "@prisma/client";
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { responses } = await req.json();
 
   // Accumulate mapped values per stat

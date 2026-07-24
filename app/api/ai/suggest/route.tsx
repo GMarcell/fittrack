@@ -17,6 +17,9 @@ const STAT_LABELS: Record<StatType, string> = {
 
 export async function POST() {
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const [stats, recentSessions, activeGoals] = await Promise.all([
     prisma.stat.findMany({ where: { userId: user.id } }),

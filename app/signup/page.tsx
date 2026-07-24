@@ -60,15 +60,35 @@ export default function SignupPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold">FitTrack</h1>
-          <p className="text-sm text-muted-foreground">Create your hunter profile</p>
+      <div className="w-full max-w-sm space-y-8">
+        {/* Branding */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-primary shadow-lg shadow-primary/30">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="size-7 text-primary-foreground"
+            >
+              <path d="M6 20V4M18 20V4M6 12h12M6 6h12M6 18h12" />
+              <path d="M9 4v4a3 3 0 006 0V4" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              FitTrack
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Create your hunter profile
+            </p>
+          </div>
         </div>
 
+        {/* Signup form */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Sign up</CardTitle>
+            <CardTitle className="text-base">Create account</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,9 +122,14 @@ export default function SignupPage() {
                 />
               </div>
 
-              {error && <p className="text-red-600 text-sm">{error}</p>}
+              {error && (
+                <p className="text-destructive text-sm flex items-center gap-1.5">
+                  <span>⚠</span>
+                  <span>{error}</span>
+                </p>
+              )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
@@ -113,7 +138,10 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="underline hover:text-foreground">
+          <Link
+            href="/login"
+            className="text-primary underline underline-offset-4 hover:text-primary/80 font-medium transition-colors"
+          >
             Log in
           </Link>
         </p>

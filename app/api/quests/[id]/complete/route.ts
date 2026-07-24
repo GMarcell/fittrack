@@ -7,6 +7,9 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
   const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await req.json();
   if (!body.completionNote || body.completionNote.trim().length < 5) {
     return NextResponse.json(
@@ -14,7 +17,7 @@ export async function POST(req: Request, { params }: Params) {
       { status: 400 },
     );
   }
-  const { sessionId } = body;
+  const { sessionId, completionNote } = body;
 
   const quest = await prisma.quest.findFirst({
     where: { id: id, userId: user.id },
@@ -36,6 +39,7 @@ export async function POST(req: Request, { params }: Params) {
       data: {
         status: "COMPLETED",
         resolvedAt: new Date(),
+        completionNote,
         ...(sessionId ? { sessionId } : {}),
       },
     }),

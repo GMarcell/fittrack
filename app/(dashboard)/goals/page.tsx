@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { GoalsList } from "@/components/goals/goals-list";
+
+export const metadata: Metadata = {
+  title: "Goals — FitTrack",
+};
 
 export default async function GoalsPage() {
   const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   const [activeGoals, archivedGoals] = await Promise.all([
     prisma.goal.findMany({

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { CreateQuestForm } from "../quests/create-quest-form";
 
 type Reward = {
@@ -39,42 +40,84 @@ const STATUS_LABELS: Record<Quest["status"], string> = {
   FAILED: "Failed",
 };
 
-export function DailyQuests() {
+export function DailyQuests({ initialQuests = [] }: { initialQuests?: Quest[] }) {
   const router = useRouter();
-  const [quests, setQuests] = useState<Quest[]>([]);
+  const [quests, setQuests] = useState<Quest[]>(initialQuests);
   const [regenerating, setRegenerating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(initialQuests.length === 0);
+  const [completingQuestId, setCompletingQuestId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [completionError, setCompletionError] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function regenerate() {
     setRegenerating(true);
+    setActionError(null);
     const res = await fetch("/api/quests/generate", { method: "POST" });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Failed to regenerate quests. Try again." }));
+      setActionError(err.error ?? "Failed to regenerate quests. Try again.");
+      setRegenerating(false);
+      return;
+    }
+
     const data = await res.json();
     setQuests(data);
     setRegenerating(false);
+    router.refresh();
   }
 
   async function accept(questId: string) {
     setActionLoading(questId);
+    setActionError(null);
     const res = await fetch(`/api/quests/${questId}/accept`, {
       method: "POST",
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Failed to accept quest" }));
+      setActionError(err.error ?? "Failed to accept quest");
+      setActionLoading(null);
+      return;
+    }
+
     const updated = await res.json();
     setQuests((prev) => prev.map((q) => (q.id === questId ? updated : q)));
     setActionLoading(null);
+    router.refresh();
   }
 
-  async function complete(questId: string) {
+  async function confirmComplete(questId: string) {
+    if (completionNote.trim().length < 5) {
+      setCompletionError("Please describe what you did (at least 5 characters)");
+      return;
+    }
+
     setActionLoading(questId);
+    setCompletionError("");
+
     const res = await fetch(`/api/quests/${questId}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ completionNote: completionNote.trim() }),
     });
+
+    if (!res.ok) {
+      const err = await res.json();
+      setCompletionError(err.error ?? "Failed to complete quest");
+      setActionLoading(null);
+      setActionError(null);
+      return;
+    }
+
     const updated = await res.json();
     setQuests((prev) => prev.map((q) => (q.id === questId ? updated : q)));
     setActionLoading(null);
+    setCompletingQuestId(null);
+    setCompletionNote("");
     // Refresh server components to update radar chart + level
     router.refresh();
   }
@@ -84,27 +127,44 @@ export function DailyQuests() {
   );
 
   async function fetchQuests() {
+    setLoading(true);
+    setActionError(null);
     const res = await fetch("/api/quests/today");
+
+    if (!res.ok) {
+      setActionError("Failed to load quests.");
+      setLoading(false);
+      return;
+    }
+
     const data = await res.json();
     setQuests(data);
     setLoading(false);
   }
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const res = await fetch("/api/quests/today");
-      const data = await res.json();
-      if (!cancelled) {
-        setQuests(data);
-        setLoading(false);
+    // If no initial data from server (e.g. cold navigation or empty), fetch from client
+    if (initialQuests.length === 0) {
+      let cancelled = false;
+      async function load() {
+        setLoading(true);
+        const res = await fetch("/api/quests/today");
+        if (!cancelled) {
+          if (res.ok) {
+            const data = await res.json();
+            setQuests(data);
+          } else {
+            setActionError("Failed to load quests.");
+          }
+          setLoading(false);
+        }
       }
+      load();
+      return () => {
+        cancelled = true;
+      };
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [initialQuests.length]);
 
   return (
     <Card>
@@ -147,6 +207,19 @@ export function DailyQuests() {
         </div>
       )}
       <CardContent className="space-y-3">
+        {/* General action error banner */}
+        {actionError && (
+          <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2.5">
+            <span className="text-red-500 text-sm mt-0.5">⚠</span>
+            <p className="text-xs text-red-600 dark:text-red-400 flex-1">{actionError}</p>
+            <button
+              className="text-red-400 hover:text-red-600 text-sm leading-none"
+              onClick={() => setActionError(null)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {quests.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No quests for today yet.
@@ -198,15 +271,58 @@ export function DailyQuests() {
                     {actionLoading === quest.id ? "..." : "Accept Quest"}
                   </Button>
                 )}
-                {quest.status === "PENDING" && (
+                {quest.status === "PENDING" && completingQuestId !== quest.id && (
                   <Button
                     size="sm"
                     className="w-full bg-green-600 hover:bg-green-700 text-white"
                     disabled={actionLoading === quest.id}
-                    onClick={() => complete(quest.id)}
+                    onClick={() => {
+                      setCompletingQuestId(quest.id);
+                      setCompletionNote("");
+                      setCompletionError("");
+                    }}
                   >
-                    {actionLoading === quest.id ? "..." : "✓ Mark Complete"}
+                    ✓ Mark Complete
                   </Button>
+                )}
+                {quest.status === "PENDING" && completingQuestId === quest.id && (
+                  <div className="space-y-2 w-full">
+                    <Textarea
+                      rows={2}
+                      placeholder="Describe what you did to complete this quest..."
+                      value={completionNote}
+                      onChange={(e) => {
+                        setCompletionNote(e.target.value);
+                        setCompletionError("");
+                      }}
+                    />
+                    {completionError && (
+                      <p className="text-xs text-red-500">{completionError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        disabled={actionLoading === quest.id}
+                        onClick={() => {
+                          setCompletingQuestId(null);
+                          setCompletionNote("");
+                          setCompletionError("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        disabled={actionLoading === quest.id}
+                        onClick={() => confirmComplete(quest.id)}
+                      >
+                        {actionLoading === quest.id ? "..." : "Confirm"}
+                      </Button>
+                    </div>
+                  </div>
                 )}
                 {quest.status === "COMPLETED" && (
                   <p className="text-xs text-green-600 font-medium">

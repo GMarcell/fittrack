@@ -1,15 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+export const metadata: Metadata = {
+  title: "Sessions — FitTrack",
+};
+
 export default async function SessionsPage() {
   const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const sessions = await prisma.session.findMany({
     where: { userId: user.id },
     orderBy: { date: "desc" },
+    take: 100,
     include: { activityType: true, goal: true },
   });
 

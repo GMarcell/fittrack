@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { NewSessionForm } from "@/components/sessions/new-session-form";
+
+export const metadata: Metadata = {
+  title: "Log Session — FitTrack",
+};
 
 export default async function NewSessionPage() {
   const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   const [activityTypes, goals, exercises] = await Promise.all([
     prisma.activityType.findMany({

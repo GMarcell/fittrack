@@ -243,6 +243,16 @@
   100% { background-position: -200% 0; }
 }
 
+/* ── Shake for validation feedback ── */
+
+@keyframes shake {
+  0%, 100% { translate: 0; }
+  20%      { translate: -6px; }
+  40%      { translate: 6px; }
+  60%      { translate: -4px; }
+  80%      { translate: 4px; }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),

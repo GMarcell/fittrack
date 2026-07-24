@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const STAT_OPTIONS = [
   { value: "STR", label: "Strength" },
@@ -35,6 +36,34 @@ type Props = {
   onCancel: () => void;
 };
 
+type FieldErrors = {
+  title?: string;
+  targetText?: string;
+  rewards?: string;
+};
+
+function validate(title: string, targetText: string, rewards: Reward[]): FieldErrors {
+  const errors: FieldErrors = {};
+
+  if (!title.trim()) {
+    errors.title = "Quest title is required";
+  } else if (title.trim().length < 3) {
+    errors.title = "Title must be at least 3 characters";
+  }
+
+  if (!targetText.trim()) {
+    errors.targetText = "Target is required";
+  } else if (targetText.trim().length < 5) {
+    errors.targetText = "Target must be at least 5 characters";
+  }
+
+  if (rewards.length === 0) {
+    errors.rewards = "At least one stat reward is required";
+  }
+
+  return errors;
+}
+
 export function CreateQuestForm({ onCreated, onCancel }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -44,6 +73,30 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+
+  function markTouched(field: string) {
+    setTouched((prev) => new Set(prev).add(field));
+  }
+
+  function clearFieldError(field: keyof FieldErrors) {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function handleBlur(field: keyof FieldErrors) {
+    markTouched(field);
+    const newErrors = validate(title, targetText, rewards);
+    if (newErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: newErrors[field] }));
+    } else {
+      clearFieldError(field);
+    }
+  }
 
   function addReward() {
     if (rewards.length >= 3) return;
@@ -51,10 +104,17 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
       ...prev,
       { type: "END", completionValue: 2, failurePenalty: 1 },
     ]);
+    clearFieldError("rewards");
   }
 
   function removeReward(index: number) {
     setRewards((prev) => prev.filter((_, i) => i !== index));
+    // Validate rewards count after removal
+    const remaining = rewards.length - 1;
+    if (remaining === 0) {
+      setFieldErrors((prev) => ({ ...prev, rewards: "At least one stat reward is required" }));
+      markTouched("rewards");
+    }
   }
 
   function updateReward(
@@ -69,6 +129,18 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched(new Set(["title", "targetText", "rewards"]));
+
+    // Run full validation
+    const newErrors = validate(title, targetText, rewards);
+    setFieldErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -107,9 +179,18 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
             <Input
               placeholder="e.g. Morning Run"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
+              onChange={(e) => {
+                setTitle(e.target.value);
+                clearFieldError("title");
+              }}
+              onBlur={() => handleBlur("title")}
+              className={cn(
+                touched.has("title") && fieldErrors.title && "border-destructive focus-visible:ring-destructive/50",
+              )}
             />
+            {touched.has("title") && fieldErrors.title && (
+              <p className="text-xs text-destructive mt-0.5">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Description */}
@@ -128,9 +209,18 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
             <Input
               placeholder="e.g. Run 5km without stopping"
               value={targetText}
-              onChange={(e) => setTargetText(e.target.value)}
-              required
+              onChange={(e) => {
+                setTargetText(e.target.value);
+                clearFieldError("targetText");
+              }}
+              onBlur={() => handleBlur("targetText")}
+              className={cn(
+                touched.has("targetText") && fieldErrors.targetText && "border-destructive focus-visible:ring-destructive/50",
+              )}
             />
+            {touched.has("targetText") && fieldErrors.targetText && (
+              <p className="text-xs text-destructive mt-0.5">{fieldErrors.targetText}</p>
+            )}
           </div>
 
           {/* Rewards */}
@@ -147,6 +237,10 @@ export function CreateQuestForm({ onCreated, onCancel }: Props) {
                 + Add Stat
               </Button>
             </div>
+
+            {touched.has("rewards") && fieldErrors.rewards && (
+              <p className="text-xs text-destructive">{fieldErrors.rewards}</p>
+            )}
 
             {rewards.map((reward, index) => (
               <div key={index} className="grid grid-cols-3 gap-2 items-end">

@@ -26,12 +26,35 @@ export function GoalsList({
 }) {
   const router = useRouter();
   const [archiving, setArchiving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
   async function handleArchive(id: string) {
     setArchiving(id);
-    await fetch(`/api/goals/${id}/archive`, { method: "POST" });
+    setError(null);
+    const res = await fetch(`/api/goals/${id}/archive`, { method: "POST" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Failed to archive goal" }));
+      setError(typeof data.error === "string" ? data.error : "Failed to archive goal");
+      setArchiving(null);
+      return;
+    }
     setArchiving(null);
+    router.refresh();
+  }
+
+  async function handleDelete(id: string) {
+    setDeleting(id);
+    setError(null);
+    const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Failed to delete goal" }));
+      setError(typeof data.error === "string" ? data.error : "Failed to delete goal");
+      setDeleting(null);
+      return;
+    }
+    setDeleting(null);
     router.refresh();
   }
 
@@ -85,7 +108,7 @@ export function GoalsList({
               <Button
                 size="sm"
                 variant="outline"
-                disabled={archiving === goal.id}
+                disabled={archiving === goal.id || deleting === goal.id}
                 onClick={() => handleArchive(goal.id)}
               >
                 {archiving === goal.id ? "Archiving..." : "Archive"}
@@ -94,12 +117,10 @@ export function GoalsList({
                 size="sm"
                 variant="ghost"
                 className="text-destructive hover:text-destructive/80"
-                onClick={async () => {
-                  await fetch(`/api/goals/${goal.id}`, { method: "DELETE" });
-                  router.refresh();
-                }}
+                disabled={archiving === goal.id || deleting === goal.id}
+                onClick={() => handleDelete(goal.id)}
               >
-                Delete
+                {deleting === goal.id ? "Deleting..." : "Delete"}
               </Button>
             </div>
           )}
@@ -110,6 +131,19 @@ export function GoalsList({
 
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2.5">
+          <span className="text-red-500 text-sm mt-0.5">⚠</span>
+          <p className="text-xs text-red-600 dark:text-red-400 flex-1">{error}</p>
+          <button
+            className="text-red-400 hover:text-red-600 text-sm leading-none"
+            onClick={() => setError(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* Active goals */}
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">

@@ -43,8 +43,7 @@ describe("generateQuestsForUser", () => {
 
   it("throws if GROQ_API_KEY is not set", async () => {
     const origKey = process.env.GROQ_API_KEY;
-    // @ts-expect-error - deleting env var for test
-    delete process.env.GROQ_API_KEY;
+    process.env.GROQ_API_KEY = undefined;
 
     await expect(generateQuestsForUser("user-1")).rejects.toThrow(
       "GROQ_API_KEY not configured",

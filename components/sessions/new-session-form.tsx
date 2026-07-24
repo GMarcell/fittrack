@@ -134,7 +134,14 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
     });
 
     if (!res.ok) {
-      setError("Failed to log session. Please try again.");
+      const data = await res.json().catch(() => ({}));
+      const apiError =
+        typeof data.error === "string"
+          ? data.error
+          : data.error?.fieldErrors
+            ? Object.values(data.error.fieldErrors).flat().join(", ")
+            : null;
+      setError(apiError ?? "Failed to log session. Please try again.");
       setLoading(false);
       return;
     }
@@ -386,7 +393,12 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
         ))}
       </div>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2.5">
+          <span className="text-red-500 text-sm mt-0.5">⚠</span>
+          <p className="text-xs text-red-600 dark:text-red-400 flex-1">{error}</p>
+        </div>
+      )}
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Logging..." : "Log Session"}

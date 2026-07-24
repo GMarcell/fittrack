@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type ActivityType = { id: string; name: string };
 type Goal = { id: string; name: string };
@@ -33,6 +34,16 @@ type Props = {
 
 type StatBoost = { type: string; value: number };
 
+type FieldErrors = {
+  activityTypeId?: string;
+  date?: string;
+  duration?: string;
+  rpe?: string;
+};
+
+const MAX_DURATION = 600;
+const MIN_DURATION = 1;
+
 const STAT_OPTIONS = [
   { value: "STR", label: "Strength" },
   { value: "END", label: "Endurance" },
@@ -50,6 +61,50 @@ const INTENSITY_OPTIONS = [
   { value: 3, label: "Hard (+3)" },
 ];
 
+function validate(values: {
+  activityTypeId: string;
+  date: string;
+  duration: string;
+  rpe: string;
+}): FieldErrors {
+  const errors: FieldErrors = {};
+
+  if (!values.activityTypeId) {
+    errors.activityTypeId = "Activity type is required";
+  }
+
+  // Date must not be in the future
+  if (values.date) {
+    const selected = new Date(values.date + "T23:59:59");
+    const now = new Date();
+    if (selected > now) {
+      errors.date = "Session date cannot be in the future";
+    }
+  }
+
+  // Duration: must be a positive number within range
+  if (values.duration) {
+    const num = Number(values.duration);
+    if (!Number.isFinite(num) || !Number.isInteger(num)) {
+      errors.duration = "Duration must be a whole number";
+    } else if (num < MIN_DURATION || num > MAX_DURATION) {
+      errors.duration = `Duration must be between ${MIN_DURATION} and ${MAX_DURATION} minutes`;
+    }
+  }
+
+  // RPE: must be 1-10
+  if (values.rpe) {
+    const num = Number(values.rpe);
+    if (!Number.isFinite(num) || !Number.isInteger(num)) {
+      errors.rpe = "RPE must be a whole number";
+    } else if (num < 1 || num > 10) {
+      errors.rpe = "RPE must be between 1 and 10";
+    }
+  }
+
+  return errors;
+}
+
 export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
   const router = useRouter();
   const [activityTypeId, setActivityTypeId] = useState("");
@@ -65,6 +120,20 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
   const [statBoosts, setStatBoosts] = useState<StatBoost[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+
+  function markTouched(field: string) {
+    setTouched((prev) => new Set(prev).add(field));
+  }
+
+  function clearFieldError(field: keyof FieldErrors) {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function addExercise() {
     setSessionExercises((prev) => [...prev, { exerciseId: "" }]);
@@ -111,9 +180,55 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
     );
   }
 
+  function handleFieldBlur(field: keyof FieldErrors) {
+    markTouched(field);
+    const newErrors = validate({
+      activityTypeId,
+      date,
+      duration,
+      rpe,
+    });
+    if (newErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: newErrors[field] }));
+    } else {
+      clearFieldError(field);
+    }
+  }
+
+  function handleActivityChange(value: string) {
+    setActivityTypeId(value);
+    clearFieldError("activityTypeId");
+  }
+
+  function handleDateChange(value: string) {
+    setDate(value);
+    clearFieldError("date");
+  }
+
+  function handleDurationChange(value: string) {
+    setDuration(value);
+    clearFieldError("duration");
+  }
+
+  function handleRpeChange(value: string) {
+    setRpe(value);
+    clearFieldError("rpe");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!activityTypeId) return setError("Activity type is required");
+
+    // Mark all fields as touched
+    setTouched(new Set(["activityTypeId", "date", "duration", "rpe"]));
+
+    // Run full validation
+    const newErrors = validate({ activityTypeId, date, duration, rpe });
+    setFieldErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -158,15 +273,26 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
         <Input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => handleDateChange(e.target.value)}
+          onBlur={() => handleFieldBlur("date")}
+          className={cn(
+            touched.has("date") && fieldErrors.date && "border-destructive focus-visible:ring-destructive/50",
+          )}
         />
+        {touched.has("date") && fieldErrors.date && (
+          <p className="text-xs text-destructive mt-0.5">{fieldErrors.date}</p>
+        )}
       </div>
 
       {/* Activity Type */}
       <div className="space-y-1">
         <Label>Activity Type</Label>
-        <Select onValueChange={setActivityTypeId}>
-          <SelectTrigger>
+        <Select onValueChange={handleActivityChange}>
+          <SelectTrigger
+            className={cn(
+              touched.has("activityTypeId") && fieldErrors.activityTypeId && "border-destructive focus-visible:ring-destructive/50",
+            )}
+          >
             <SelectValue placeholder="Select activity type" />
           </SelectTrigger>
           <SelectContent>
@@ -177,6 +303,9 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
             ))}
           </SelectContent>
         </Select>
+        {touched.has("activityTypeId") && fieldErrors.activityTypeId && (
+          <p className="text-xs text-destructive mt-0.5">{fieldErrors.activityTypeId}</p>
+        )}
       </div>
 
       {/* Goal (optional) */}
@@ -214,8 +343,15 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
             type="number"
             placeholder="60"
             value={duration}
-            onChange={(e) => setDuration(e.target.value)}
+            onChange={(e) => handleDurationChange(e.target.value)}
+            onBlur={() => handleFieldBlur("duration")}
+            className={cn(
+              touched.has("duration") && fieldErrors.duration && "border-destructive focus-visible:ring-destructive/50",
+            )}
           />
+          {touched.has("duration") && fieldErrors.duration && (
+            <p className="text-xs text-destructive mt-0.5">{fieldErrors.duration}</p>
+          )}
         </div>
         <div className="space-y-1">
           <Label>RPE (1–10)</Label>
@@ -225,8 +361,15 @@ export function NewSessionForm({ activityTypes, goals, exercises }: Props) {
             max={10}
             placeholder="7"
             value={rpe}
-            onChange={(e) => setRpe(e.target.value)}
+            onChange={(e) => handleRpeChange(e.target.value)}
+            onBlur={() => handleFieldBlur("rpe")}
+            className={cn(
+              touched.has("rpe") && fieldErrors.rpe && "border-destructive focus-visible:ring-destructive/50",
+            )}
           />
+          {touched.has("rpe") && fieldErrors.rpe && (
+            <p className="text-xs text-destructive mt-0.5">{fieldErrors.rpe}</p>
+          )}
         </div>
       </div>
 

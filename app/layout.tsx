@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FitTrack",
-  description: "Your fitness journey, gamified",
+  title: "PR Tracker",
+  description: "Track your fitness personal bests and body metrics",
 };
 
 export default function RootLayout({

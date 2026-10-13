@@ -7,15 +7,20 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-enum ExerciseCategory {
-    STRENGTH
-    CONDITIONING
-    SKILL
-    FLEXIBILITY
-    OTHER
+// ---------------------------------------------------------------------------
+// Personal best tracker
+//
+// A `PersonalBest` is a named record the user tracks (e.g. "Max Push-ups" or
+// "Bodyweight"). `bestValue` always holds the current best/latest value for
+// that record, and every logged entry lives in `Attempt` as history.
+// ---------------------------------------------------------------------------
+
+enum PersonalBestType {
+    EXERCISE
+    BODY_METRIC
 }
 
-enum MetricUnit {
+enum PersonalBestUnit {
     REPS
     SECONDS
     MINUTES
@@ -24,34 +29,18 @@ enum MetricUnit {
     KG
     LB
     COUNT
+    CM
+    MM
+    PERCENT
 }
 
-enum GoalPriority {
-    PRIMARY
-    SECONDARY
-}
-
-enum GoalStatus {
-    ACTIVE
-    ARCHIVED
-}
-
-enum StatType {
-    STR
-    END
-    AGI
-    SPD
-    PWR
-    FLX
-    VIT
-    DSC
-}
-
-enum QuestStatus {
-    OFFERED
-    PENDING
-    COMPLETED
-    FAILED
+/// Scoring for a record. Chosen per record because a unit alone cannot decide
+/// it: a 5km time and a plank hold are both seconds, but only the run is
+/// "lower is better".
+enum PersonalBestDirection {
+    HIGHER
+    LOWER
+    LATEST
 }
 
 model User {
@@ -62,190 +51,81 @@ model User {
     timezone  String   @default("Asia/Jakarta")
     createdAt DateTime @default(now())
 
-    activityTypes       ActivityType[]
-    exercises           Exercise[]
-    sessions            Session[]
-    benchmarks          Benchmark[]
-    goals               Goal[]
-    stats               Stat[]
-    statHistory         StatHistory[]
-    quests              Quest[]
-    onboardingResponses OnboardingResponse[]
+    personalBests PersonalBest[]
+    attempts      Attempt[]
+    achievements  Achievement[]
 }
 
-model ActivityType {
-    id     String  @id @default(cuid())
+model PersonalBest {
+    id     String @id @default(cuid())
     userId String
-    user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    name   String
-    color  String?
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    sessions Session[]
+    type      PersonalBestType
+    name      String
+    unit      PersonalBestUnit
+    direction PersonalBestDirection
 
-    @@unique([userId, name])
+    /// Current best (or latest, for body metrics) value for this record.
+    bestValue  Float
+    /// Date the current bestValue was achieved.
+    achievedAt DateTime
+
+    /// Optional goal the user is chasing for this record.
+    targetValue Float?
+    targetDate  DateTime?
+
+    notes    String?
+    verified Boolean  @default(false)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    attempts     Attempt[]
+    achievements Achievement[]
+
+    @@unique([userId, type, name])
+    @@index([userId, type])
 }
 
-model Goal {
-    id         String       @id @default(cuid())
-    userId     String
-    user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    name       String
-    priority   GoalPriority @default(SECONDARY)
-    status     GoalStatus   @default(ACTIVE)
-    targetDate DateTime?
-    notes      String?
-    createdAt  DateTime     @default(now())
-    archivedAt DateTime?
-
-    sessions Session[]
-
-    @@index([userId, status])
-}
-
-model Session {
+model Attempt {
     id             String       @id @default(cuid())
     userId         String
     user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    date           DateTime
-    activityTypeId String
-    activityType   ActivityType @relation(fields: [activityTypeId], references: [id])
-    goalId         String?
-    goal           Goal?        @relation(fields: [goalId], references: [id])
-    focus          String?
-    duration       Int?
-    rpe            Int?
-    notes          String?
-    createdAt      DateTime     @default(now())
+    personalBestId String
+    personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
 
-    sessionExercises SessionExercise[]
-    quests           Quest[]
-
-    @@index([userId, date])
-    @@index([activityTypeId])
-}
-
-model Exercise {
-    id       String           @id @default(cuid())
-    userId   String
-    user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-    name     String
-    category ExerciseCategory
-    unit     MetricUnit
-    statTags StatType[]
-
-    sessionExercises SessionExercise[]
-
-    @@unique([userId, name])
-}
-
-model SessionExercise {
-    id         String   @id @default(cuid())
-    sessionId  String
-    session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-    exerciseId String
-    exercise   Exercise @relation(fields: [exerciseId], references: [id])
-
-    sets  Int?
-    reps  Int?
-    value Float?
+    value Float
+    date  DateTime
     notes String?
+    /// Reps performed at `value` (a weight for kg/lb records), used for e1RM.
+    reps Int?
+    /// Epley estimate of the one-rep max for this entry, when reps were given.
+    estimatedOneRep Float?
+    /// True when this attempt is the record's current best.
+    isBest Boolean @default(false)
 
-    @@index([sessionId])
-}
-
-model Benchmark {
-    id     String     @id @default(cuid())
-    userId String
-    user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    metric String
-    value  Float
-    unit   MetricUnit
-    date   DateTime   @default(now())
-
-    @@index([userId, metric, date])
-}
-
-model FitnessStandard {
-    id     String     @id @default(cuid())
-    metric String
-    unit   MetricUnit
-    ageMin Int?
-    ageMax Int?
-    gender String?
-    level  String
-    value  Float
-
-    @@index([metric, level])
-}
-
-model Stat {
-    id        String   @id @default(cuid())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    type      StatType
-    value     Float
-    updatedAt DateTime @updatedAt
-
-    @@unique([userId, type])
-}
-
-model OnboardingResponse {
-    id          String   @id @default(cuid())
-    userId      String
-    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    questionKey String
-    rawAnswer   String
-    mappedStat  StatType
-    mappedValue Float
-    createdAt   DateTime @default(now())
-
-    @@index([userId])
-}
-
-model StatHistory {
-    id        String   @id @default(cuid())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    type      StatType
-    delta     Float
-    reason    String
-    questId   String?
-    quest     Quest?   @relation(fields: [questId], references: [id])
     createdAt DateTime @default(now())
 
-    @@index([userId, type, createdAt])
-}
-
-model Quest {
-    id             String      @id @default(cuid())
-    userId         String
-    user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-    date           DateTime    @default(now())
-    title          String
-    description    String?
-    targetText     String
-    status         QuestStatus @default(OFFERED)
-    acceptedAt     DateTime?
-    sessionId      String?
-    session        Session?    @relation(fields: [sessionId], references: [id])
-    createdAt      DateTime    @default(now())
-    resolvedAt     DateTime?
-    completionNote String?
-    verified       Boolean     @default(false)
-
-    rewards    QuestStatReward[]
-    statEvents StatHistory[]
-
+    @@index([personalBestId, date])
     @@index([userId, date])
 }
 
-model QuestStatReward {
-    id              String   @id @default(cuid())
-    questId         String
-    quest           Quest    @relation(fields: [questId], references: [id], onDelete: Cascade)
-    type            StatType
-    completionValue Float
-    failurePenalty  Float
+/// Append-only log of every time a record was broken.
+/// Deliberately not recomputed: an achievement records what happened at the time.
+model Achievement {
+    id             String       @id @default(cuid())
+    userId         String
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    personalBestId String
+    personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
 
-    @@index([questId])
+    value         Float
+    /// Previous best, null for the first entry that established the record.
+    previousValue Float?
+    date          DateTime
+    createdAt     DateTime @default(now())
+
+    @@index([userId, date])
+    @@index([personalBestId, date])
 }

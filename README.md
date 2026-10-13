@@ -1,58 +1,69 @@
-# FitTrack — Solo Leveling Fitness Tracker
+# PR Tracker — Personal Best Fitness Log
 
-A fitness tracking app with a Solo Leveling-inspired gamification system. Train, level up your hunter stats, complete daily quests, and compete against benchmarks.
+A focused app for recording fitness personal bests. Log a PR once, then keep
+appending entries — the app always knows your current best, shows how it has
+changed over time, and tracks body metrics alongside it.
 
-Built with [Next.js 16](https://nextjs.org), [Prisma](https://prisma.io), [Radix UI](https://radix-ui.com), and [Tailwind CSS v4](https://tailwindcss.com).
+Built with [Next.js 16](https://nextjs.org), [Prisma](https://prisma.io),
+[Radix UI](https://radix-ui.com), and [Tailwind CSS v4](https://tailwindcss.com).
 
 ---
 
 ## Features
 
-### 🎮 Gamified Stats System
-- **8 hunter stats**: Strength (STR), Endurance (END), Agility (AGI), Speed (SPD), Power (PWR), Flexibility (FLX), Vitality (VIT), Discipline (DSC)
-- Each stat ranges 0–100, visible on a radar chart
-- Hunter Level + Rank (E through S) calculated from average stat value
-- Stat history tracks every gain and loss over time
+### 🏋️ Personal bests
+- Log an exercise PR (push-ups, pull-ups, 5km run, deadlift, …) or name your own
+- Re-logging the same record appends to its history instead of creating duplicates
+- Each record keeps the current best value, the date it was set, and every entry behind it
+- **Scoring is stored per record, not guessed from the unit.** A plank hold and a 5km
+  run are both measured in seconds/minutes, but only the run is "lower is better" —
+  presets set the right scoring automatically and you can flip it at any time
+- Optional notes and a "verified" flag for judged, filmed or witnessed lifts
+- Units are locked per record, so kg and lb entries can never be mixed up
 
-### ⚔ Daily Quests
-- AI-generated daily quests target your weakest stats
-- Accept quests before midnight or they fail
-- Complete quests to earn stat gains; failure applies penalties (3:1 gain/penalty ratio)
-- Custom quest creation with manual stat reward assignment
-- Quest failure sweep runs automatically on dashboard load and via a cron endpoint
+### 📏 Body metrics
+- Track bodyweight, body fat %, waist, chest and arm measurements
+- Body metrics follow the latest measurement rather than a "best", so trends read naturally
+- Latest metric gets a dedicated chart on the metrics page
 
-### 🤖 AI Weekly Planning (Groq)
-- Generates a 7-day training plan based on recent sessions, goals, and stat weaknesses
-- Extracts 1–3 daily quests from the plan
-- Powered by Groq's Llama 3.3 70B model
+### 🏆 PR history that never forgets
+- Every time you break a record it's written to an append-only achievement log
+- "PRs broken" feed on the dashboard, with the size of each jump
+- Per-record "Record history" timeline: every time that record fell, and by how much
+- A momentum card: days since your last PR, PRs in the last 30 days, how many
+  records you've improved, and which improved most
 
-### 📊 Session Tracking
-- Log training sessions with date, activity type, duration, RPE (1–10), and notes
-- Link sessions to goals and exercises
-- Optional stat boosts applied when logging a session
-- Training consistency bar chart on the Stats page
+### 🎯 Targets
+- Give any record a target value (and optional target date)
+- Target drawn on the progress chart, with a bar and "X kg to go"
+- Reaching it flips the record to "Reached 🎉"
 
-### 🎯 Goals
-- Create active goals with PRIMARY/SECONDARY priority and target dates
-- Countdown display on the dashboard
-- Archive completed goals; delete unwanted ones
+### 💪 Estimated one-rep max
+- Log reps alongside a weighted set and the app derives an Epley 1RM estimate
+- Toggle any chart between the logged value and the estimate
+- Estimates are only produced at 20 reps or fewer, where Epley is meaningful
 
-### 📈 Benchmarks & Fitness Standards
-- Track physical benchmarks (push-ups, sprint times, run times, etc.)
-- Compare against built-in fitness standards (Beginner → Excellent)
-- Benchmark progress chart with standard reference lines
+### 📈 Progress
+- Per-record progress chart with every entry plotted in order
+- Current best marked on the chart and in the history list
+- Improvement since your first entry, shown in the record's own unit
 
-### 📱 Responsive Design
-- Desktop nav bar with backdrop blur
-- Mobile bottom tab bar with 5-tab navigation
-- Page transition animations powered by the View Transitions API
-- Loading skeletons with shimmer animation on all pages
+### 🔍 Browsing
+- Searchable, filterable list of every record (All / Exercise PR / Body metric)
+- Sparkline and "logged N days ago" on every row, so stagnation is obvious
+- Dashboard with totals, records improved this month, latest best, the PR feed
+  and a recent-entry feed
 
-### 🎨 Dark Navy Theme
-- Full dark mode with a navy-blue color palette
-- Subtle radial gradient background
-- Custom scrollbar and selection styling
-- Reduced motion support
+### 📤 CSV export / import
+- Export every logged entry as CSV (one row per entry)
+- Import from a spreadsheet — records are rebuilt in date order and the PRs they
+  produced are recreated
+- Re-importing a file you already imported is a no-op: matching entries are skipped
+
+### 📱 Responsive design
+- Desktop nav bar with backdrop blur, mobile bottom tab bar
+- Page transitions powered by the View Transitions API
+- Shimmer loading skeletons on every page
 
 ---
 
@@ -60,15 +71,13 @@ Built with [Next.js 16](https://nextjs.org), [Prisma](https://prisma.io), [Radix
 
 | Layer | Technology |
 |-------|-----------|
-| **Framework** | [Next.js 16](https://nextjs.org) (App Router) |
+| **Framework** | [Next.js 16](https://nextjs.org) (App Router, Turbopack) |
 | **Language** | TypeScript |
 | **Database** | PostgreSQL + [Prisma ORM](https://prisma.io) |
 | **Auth** | [NextAuth v5](https://next-auth.js.org) (Credentials provider, JWT sessions) |
 | **UI Library** | [Radix UI](https://radix-ui.com) + [shadcn/ui](https://ui.shadcn.com) |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com) |
-| **Animations** | [View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API) |
 | **Charts** | [Recharts](https://recharts.org) |
-| **AI** | [Groq SDK](https://groq.com) (Llama 3.3 70B) |
 | **Validation** | [Zod](https://zod.dev) |
 | **Testing** | [Vitest](https://vitest.dev) + [Testing Library](https://testing-library.com) |
 | **Icons** | [Lucide React](https://lucide.dev) |
@@ -79,23 +88,21 @@ Built with [Next.js 16](https://nextjs.org), [Prisma](https://prisma.io), [Radix
 
 ### Prerequisites
 
-- Node.js 20+ (required for Next.js 16)
+- Node.js 20.9+ (required for Next.js 16)
 - PostgreSQL database
-- [Groq API key](https://console.groq.com) (for AI features)
 
 ### Installation
 
 ```bash
-# Clone and install
 cd fittrack
 npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your database URL and API keys
+# Edit .env with your database URL and auth secret
 
-# Initialize the database
-npx prisma migrate dev
+# Apply migrations
+npx prisma migrate deploy
 
 # Seed demo data
 npm run prisma:seed
@@ -104,9 +111,10 @@ npm run prisma:seed
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000). Login with the seeded demo account:
+Visit [http://localhost:3000](http://localhost:3000) and sign in with the seeded
+demo account:
 
-- **Email:** `xavior@example.com`
+- **Email:** `demo@example.com`
 - **Password:** `password123`
 
 ### Environment Variables
@@ -116,14 +124,7 @@ Visit [http://localhost:3000](http://localhost:3000). Login with the seeded demo
 DATABASE_URL="postgresql://user:password@localhost:5432/fittrack"
 
 # Auth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-here"
-
-# AI (Groq)
-GROQ_API_KEY="gsk_your-groq-api-key"
-
-# Cron
-CRON_SECRET="your-cron-secret"
+AUTH_SECRET="generate-with: npx auth secret"
 ```
 
 ---
@@ -139,7 +140,7 @@ CRON_SECRET="your-cron-secret"
 | `npm test` | Run Vitest tests |
 | `npm run prisma:studio` | Open Prisma Studio (DB GUI) |
 | `npm run prisma:seed` | Seed demo data |
-| `npm run prisma:migrate` | Run database migrations |
+| `npm run prisma:migrate` | Create/apply a dev migration |
 
 ---
 
@@ -147,66 +148,97 @@ CRON_SECRET="your-cron-secret"
 
 ```
 app/
-├── (dashboard)/         # Dashboard layout & pages (authenticated)
-│   ├── layout.tsx       # Nav bar, mobile tabs, page transitions
-│   ├── page.tsx         # Dashboard (radar, quests, goals, etc.)
-│   ├── loading.tsx      # Skeleton loading state
-│   ├── goals/
-│   ├── quests/
-│   ├── sessions/
-│   │   └── new/
-│   └── stats/
-├── api/                 # REST API routes
-│   ├── auth/            # Signup + NextAuth handler
-│   ├── sessions/        # CRUD sessions
-│   ├── quests/          # Generate, accept, complete, log
-│   ├── goals/           # CRUD + archive goals
-│   ├── benchmarks/      # Track benchmarks
-│   ├── stats/           # Stat history
-│   ├── ai/              # AI weekly plan generation
-│   ├── onboarding/      # Initial stat calibration
-│   └── cron/            # Quest failure sweep
-├── login/
-├── signup/
-├── onboarding/
-├── layout.tsx           # Root layout (dark mode, fonts)
-└── globals.css          # Theme, view transitions, shimmer
+├── (dashboard)/              # Authenticated app shell
+│   ├── layout.tsx            # Nav bar, mobile tabs, page transitions
+│   ├── page.tsx              # Dashboard (totals, latest best, recent entries)
+│   ├── loading.tsx           # Skeleton loading state
+│   ├── personal-bests/
+│   │   ├── page.tsx          # Searchable list of all records
+│   │   ├── new/page.tsx      # Log a PR or body metric
+│   │   └── [id]/page.tsx     # Record detail: chart, history, edit, delete
+│   ├── body-metrics/page.tsx # Body metric overview
+│   └── progress/page.tsx     # Progress chart for any record
+├── api/
+│   ├── auth/                 # Signup + NextAuth handler
+│   ├── personal-bests/       # List / log entries, update / delete a record
+│   ├── personal-bests/[id]/attempts/  # Append an entry to a record
+│   ├── attempts/[id]/        # Delete an entry (recomputes the best)
+│   ├── achievements/         # PR feed
+│   ├── export/               # CSV download
+│   └── import/               # CSV upload (rebuilds records + PRs)
+├── login/ · signup/
+├── layout.tsx                # Root layout
+└── globals.css               # Theme, view transitions, shimmer
 
 components/
-├── ui/                  # shadcn/ui primitives
-│   ├── button.tsx, card.tsx, badge.tsx
-│   ├── input.tsx, textarea.tsx, select.tsx, label.tsx
-│   └── skeleton.tsx     # Shimmer loading placeholder
-├── dashboard/           # Dashboard widgets
-│   ├── radar-chart.tsx, weekly-progress.tsx
-│   ├── daily-quests.tsx, ai-suggestion.tsx
-│   ├── goal-countdown.tsx, benchmark-chart.tsx
-│   ├── consistency-chart.tsx, stat-history-chart.tsx
-│   └── activity-mix.tsx
-├── sessions/
-├── quests/
-└── goals/
+├── ui/                       # shadcn/ui primitives
+│   ├── button.tsx, card.tsx, badge.tsx, skeleton.tsx
+│   └── input.tsx, textarea.tsx, select.tsx, label.tsx, switch.tsx
+├── personal-bests/           # PR-specific components
+│   ├── personal-best-form.tsx    # Log form (preset, unit, scoring, reps, target)
+│   ├── personal-best-list.tsx    # Rows with sparkline, last-logged, target bar
+│   ├── personal-best-filters.tsx # Search + category filter
+│   ├── personal-best-actions.tsx # Edit / delete a record and its target
+│   ├── log-attempt-form.tsx      # Inline entry form with a 1RM preview
+│   ├── attempt-history.tsx       # Entry history with delete
+│   ├── progress-chart.tsx        # Value-over-time + target line + 1RM toggle
+│   ├── progress-picker.tsx       # Record selector for /progress
+│   ├── sparkline.tsx             # Dependency-free SVG sparkline
+│   └── import-export.tsx         # CSV upload / download
+└── dashboard/                # Dashboard widgets
+    ├── stat-cards.tsx, recent-activity.tsx
+    ├── consistency-card.tsx      # Momentum: last PR, 30-day totals
+    ├── pr-feed.tsx               # Records broken recently
+    └── nav-links.tsx
 
-lib/                     # Business logic
-├── auth.ts              # NextAuth config + getCurrentUser
-├── prisma.ts            # Singleton Prisma client
-├── quest.ts             # AI quest generation
-├── quest-sweep.ts       # Auto-fail expired quests
-├── onboarding.ts        # Onboarding questions & stat mapping
-├── validation.ts        # Zod schemas
-└── utils.ts             # cn(), daysUntil()
+lib/
+├── auth.ts                   # NextAuth config + getCurrentUser
+├── prisma.ts                 # Singleton Prisma client
+├── personal-best.ts          # Units, presets, scoring, targets, 1RM, Zod schemas
+├── personal-best-service.ts  # Shared logEntry + best recomputation
+├── csv.ts                    # CSV parse / serialize
+└── utils.ts                  # cn(), daysUntil()
 
 prisma/
-├── schema.prisma        # Database schema
-├── seed.ts              # Demo seed data
-└── migrations/          # Migration history
+├── schema.prisma             # User · PersonalBest · Attempt · Achievement
+├── seed.ts                   # Demo records with realistic history
+└── migrations/               # Migration history
 
-test/                    # Test suite
+test/                         # Test suite
 ├── setup.ts
-├── lib/                 # Unit tests for lib/*
-├── api/                 # API route tests
-└── components/          # Component tests
+├── lib/                      # Domain + service unit tests
+├── api/                      # API route tests
+└── components/               # Component tests
 ```
+
+---
+
+## Domain Model
+
+A `PersonalBest` is one named record. Its `bestValue` always mirrors the
+attempt history, so the record and its entries can never drift apart.
+
+Every record stores its own `direction` (`HIGHER`, `LOWER` or `LATEST`). A unit
+alone cannot decide this — `SECONDS` means "longer is better" for a plank hold
+but "faster is better" for a 40m sprint — so presets carry the right scoring for
+their record and custom records fall back to a unit-based guess that you can
+change in the edit form.
+
+| Category | Units | Typical scoring |
+|----------|-------|-----------------|
+| `EXERCISE` | reps, sec, min, m, km, kg, lb, count | `HIGHER` for reps/weights/holds, `LOWER` for sprints and runs |
+| `BODY_METRIC` | kg, lb, cm, mm, % | `LATEST` — the newest measurement is the current value |
+
+Entries are appended to `Attempt`; deleting or editing history (including
+changing a record's unit or scoring) recalculates `bestValue` from what remains.
+
+A record may also carry a `targetValue` / `targetDate`, and weighted entries can
+store `reps`, from which an Epley `estimatedOneRep` is derived.
+
+`Achievement` is a separate, append-only log: one row each time a record was
+broken, with the previous best. It is never recomputed, so editing or deleting
+entries cannot rewrite the fact that you hit a PR on a given day. Body metrics
+(`LATEST`) never produce achievements — every measurement would qualify.
 
 ---
 
@@ -216,37 +248,32 @@ test/                    # Test suite
 |----------|--------|-------------|
 | `/api/auth/signup` | POST | Create account |
 | `/api/auth/[...nextauth]` | * | NextAuth handler |
-| `/api/sessions` | GET, POST | List / create sessions |
-| `/api/sessions/[id]` | PATCH, DELETE | Update / delete session |
-| `/api/quests` | POST | Create custom quest |
-| `/api/quests/today` | GET | Get today's quests (auto-generates if empty) |
-| `/api/quests/generate` | POST | Force-regenerate today's quests |
-| `/api/quests/[id]/accept` | POST | Accept a quest |
-| `/api/quests/[id]/complete` | POST | Complete a quest (applies stat gains) |
-| `/api/quests/log` | GET | Quest history |
-| `/api/goals` | GET, POST | List / create goals |
-| `/api/goals/[id]` | DELETE | Delete a goal |
-| `/api/goals/[id]/archive` | POST | Archive a goal |
-| `/api/benchmarks` | GET, POST | Track / list benchmarks |
-| `/api/stats/history` | GET | Stat change history |
-| `/api/ai/suggest` | POST | Generate weekly plan + quests |
-| `/api/onboarding` | POST | Submit onboarding responses |
-| `/api/cron/quest-sweep` | GET | Auto-fail expired quests (protected) |
+| `/api/personal-bests` | GET | List records (`?type=`, `?q=`) |
+| `/api/personal-bests` | POST | Log an entry (creates the record if new, records a PR if it wins) |
+| `/api/personal-bests/[id]` | GET | Record with full history and PR timeline |
+| `/api/personal-bests/[id]` | PATCH | Edit name, unit, scoring, notes, verified, target |
+| `/api/personal-bests/[id]` | DELETE | Delete a record, its history and its achievements |
+| `/api/personal-bests/[id]/attempts` | POST | Append an entry to a record (`reps` optional) |
+| `/api/attempts/[id]` | DELETE | Delete an entry and rebuild the best |
+| `/api/achievements` | GET | Every record broken, newest first (`?limit=`) |
+| `/api/export` | GET | Download all entries as CSV |
+| `/api/import` | POST | Import CSV (`{ csv }`), rebuilding records and PRs |
+
+Responses from the logging endpoints include `isPersonalBest` and
+`previousValue`, so the UI can celebrate a new record and show the jump.
 
 ---
 
 ## Deployment
 
-This app is optimized for [Vercel](https://vercel.com). The `vercel.json` is pre-configured.
+This app is optimized for [Vercel](https://vercel.com).
 
 ```bash
-# Deploy to Vercel
 vercel --prod
 ```
 
-Set the required environment variables in your Vercel project dashboard.
-
-For the cron quest sweep, configure a Vercel Cron Job pointing to `/api/cron/quest-sweep` with the `CRON_SECRET` as a Bearer token.
+Set `DATABASE_URL` and `AUTH_SECRET` in your Vercel project, and run
+`npx prisma migrate deploy` against the production database.
 
 ---
 

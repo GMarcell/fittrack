@@ -53,8 +53,8 @@ export default function SignupPage() {
       return;
     }
 
-    // 3. Go to onboarding (new user has no stats yet)
-    router.push("/onboarding");
+    // 3. Head to the dashboard
+    router.push("/");
     router.refresh();
   }
 
@@ -77,10 +77,10 @@ export default function SignupPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              FitTrack
+              PR Tracker
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Create your hunter profile
+              Start recording your personal bests
             </p>
           </div>
         </div>

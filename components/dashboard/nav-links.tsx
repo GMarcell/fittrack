@@ -8,22 +8,18 @@ type NavItem = { href: string; label: string; transitionType: string };
 
 const DESKTOP_LINKS: NavItem[] = [
   { href: "/", label: "Dashboard", transitionType: "nav-back" },
-  { href: "/sessions", label: "Sessions", transitionType: "nav-forward" },
-  { href: "/quests", label: "Quests", transitionType: "nav-forward" },
-  { href: "/benchmarks", label: "Benchmarks", transitionType: "nav-forward" },
-  { href: "/goals", label: "Goals", transitionType: "nav-forward" },
-  { href: "/stats", label: "Stats", transitionType: "nav-forward" },
+  { href: "/personal-bests", label: "Personal Bests", transitionType: "nav-forward" },
+  { href: "/body-metrics", label: "Body Metrics", transitionType: "nav-forward" },
+  { href: "/progress", label: "Progress", transitionType: "nav-forward" },
 ];
 
 type MobileTab = NavItem & { icon: string };
 
 const MOBILE_TABS: MobileTab[] = [
-  { href: "/", label: "Home", icon: "⊞", transitionType: "nav-back" },
-  { href: "/quests", label: "Quests", icon: "⚔", transitionType: "nav-forward" },
-  { href: "/sessions/new", label: "Log", icon: "＋", transitionType: "nav-forward" },
-  { href: "/benchmarks", label: "Benchmarks", icon: "📊", transitionType: "nav-forward" },
-  { href: "/goals", label: "Goals", icon: "◎", transitionType: "nav-forward" },
-  { href: "/stats", label: "Stats", icon: "↗", transitionType: "nav-forward" },
+  { href: "/", label: "Home", icon: "★", transitionType: "nav-back" },
+  { href: "/personal-bests", label: "PRs", icon: "🏋", transitionType: "nav-forward" },
+  { href: "/body-metrics", label: "Body", icon: "📏", transitionType: "nav-forward" },
+  { href: "/progress", label: "Chart", icon: "📈", transitionType: "nav-forward" },
 ];
 
 function isActive(href: string, pathname: string): boolean {
@@ -51,6 +47,18 @@ export function DesktopNav() {
           {link.label}
         </Link>
       ))}
+      <div className="ml-auto flex items-center gap-2">
+        <Link
+          href="/personal-bests/new"
+          transitionTypes={["nav-forward"]}
+          className={cn(
+            "text-sm transition-colors px-3 py-1.5 rounded-md",
+            "bg-primary text-primary-foreground font-medium hover:bg-primary/80",
+          )}
+        >
+          + Log PR
+        </Link>
+      </div>
     </div>
   );
 }
@@ -60,7 +68,7 @@ export function MobileTabs() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border sm:hidden z-50">
-      <div className="grid grid-cols-6 h-14">
+      <div className="grid grid-cols-4 h-14">
         {MOBILE_TABS.map((tab) => {
           const active = isActive(tab.href, pathname);
           return (

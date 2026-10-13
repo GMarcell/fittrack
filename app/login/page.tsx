@@ -47,10 +47,10 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              FitTrack
+              PR Tracker
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Continue your hunter journey
+              Sign in to log your personal bests
             </p>
           </div>
         </div>

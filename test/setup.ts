@@ -60,18 +60,28 @@ vi.mock("next-auth/providers/credentials", () => ({
   default: vi.fn(() => ({ type: "credentials", id: "credentials" })),
 }));
 
-// Mock groq-sdk
-vi.mock("groq-sdk", () => ({
-  default: vi.fn(() => ({
-    chat: {
-      completions: {
-        create: vi.fn(),
-      },
-    },
-  })),
-}));
+// jsdom does not implement the browser APIs Radix primitives measure with.
+// Without these, rendering a Select/SelectTrigger throws in component tests.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
+if (typeof Element !== "undefined") {
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+  }
+  if (!Element.prototype.releasePointerCapture) {
+    Element.prototype.releasePointerCapture = () => {};
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+}
 
 // Set default env vars for tests
-process.env.GROQ_API_KEY = "test-groq-key";
-process.env.CRON_SECRET = "test-cron-secret";
+process.env.AUTH_SECRET = "test-auth-secret";
 process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";

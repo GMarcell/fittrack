@@ -8,16 +8,13 @@ describe("prisma singleton", () => {
     expect(typeof prisma.$disconnect).toBe("function");
   });
 
-  it("has expected model methods", async () => {
+  it("exposes the personal best models", async () => {
     const { prisma } = await import("@/lib/prisma");
     expect(typeof prisma.user.findUnique).toBe("function");
-    expect(typeof prisma.user.findMany).toBe("function");
-    expect(typeof prisma.user.create).toBe("function");
-    expect(typeof prisma.session.findMany).toBe("function");
-    expect(typeof prisma.session.create).toBe("function");
-    expect(typeof prisma.quest.findMany).toBe("function");
-    expect(typeof prisma.goal.findMany).toBe("function");
-    expect(typeof prisma.stat.upsert).toBe("function");
+    expect(typeof prisma.personalBest.findMany).toBe("function");
+    expect(typeof prisma.personalBest.create).toBe("function");
+    expect(typeof prisma.attempt.create).toBe("function");
+    expect(typeof prisma.attempt.findMany).toBe("function");
     expect(typeof prisma.$transaction).toBe("function");
   });
 

@@ -4,13 +4,13 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const signupSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().trim().min(1),
+  email: z.string().trim().email(),
   password: z.string().min(6),
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const parsed = signupSchema.safeParse(body);
 
   if (!parsed.success) {

@@ -11,6 +11,7 @@ const DESKTOP_LINKS: NavItem[] = [
   { href: "/personal-bests", label: "Personal Bests", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body Metrics", transitionType: "nav-forward" },
   { href: "/progress", label: "Progress", transitionType: "nav-forward" },
+  { href: "/training-plan", label: "Training plan", transitionType: "nav-forward" },
 ];
 
 type MobileTab = NavItem & { icon: string };
@@ -20,6 +21,7 @@ const MOBILE_TABS: MobileTab[] = [
   { href: "/personal-bests", label: "PRs", icon: "🏋", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body", icon: "📏", transitionType: "nav-forward" },
   { href: "/progress", label: "Chart", icon: "📈", transitionType: "nav-forward" },
+  { href: "/training-plan", label: "Plan", icon: "📋", transitionType: "nav-forward" },
 ];
 
 function isActive(href: string, pathname: string): boolean {

@@ -1,131 +1,161 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------------
 // Personal best tracker
-//
-// A `PersonalBest` is a named record the user tracks (e.g. "Max Push-ups" or
-// "Bodyweight"). `bestValue` always holds the current best/latest value for
-// that record, and every logged entry lives in `Attempt` as history.
 // ---------------------------------------------------------------------------
 
 enum PersonalBestType {
-    EXERCISE
-    BODY_METRIC
+  EXERCISE
+  BODY_METRIC
 }
 
 enum PersonalBestUnit {
-    REPS
-    SECONDS
-    MINUTES
-    METERS
-    KM
-    KG
-    LB
-    COUNT
-    CM
-    MM
-    PERCENT
+  REPS
+  SECONDS
+  MINUTES
+  METERS
+  KM
+  KG
+  LB
+  COUNT
+  CM
+  MM
+  PERCENT
 }
 
-/// Scoring for a record. Chosen per record because a unit alone cannot decide
-/// it: a 5km time and a plank hold are both seconds, but only the run is
-/// "lower is better".
 enum PersonalBestDirection {
-    HIGHER
-    LOWER
-    LATEST
+  HIGHER
+  LOWER
+  LATEST
 }
 
 model User {
-    id        String   @id @default(cuid())
-    email     String   @unique
-    name      String?
-    password  String
-    timezone  String   @default("Asia/Jakarta")
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  timezone  String   @default("Asia/Jakarta")
+  createdAt DateTime @default(now())
 
-    personalBests PersonalBest[]
-    attempts      Attempt[]
-    achievements  Achievement[]
+  /// Has the user completed the first-login fitness onboarding (assessment + plan).
+  onboardingCompleted Boolean  @default(false)
+
+  /// Onboarding context for the first-time personal trainer flow.
+  fitnessGoal     String? @default("general_fitness")
+  experienceLevel String? @default("intermediate")
+  equipment       String? @default("bodyweight")
+  injuries        String?
+
+  personalBests PersonalBest[]
+  attempts      Attempt[]
+  achievements  Achievement[]
+  trainingPlans TrainingPlan[]
 }
 
 model PersonalBest {
-    id     String @id @default(cuid())
-    userId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    type      PersonalBestType
-    name      String
-    unit      PersonalBestUnit
-    direction PersonalBestDirection
+  type      PersonalBestType
+  name      String
+  unit      PersonalBestUnit
+  direction PersonalBestDirection
 
-    /// Current best (or latest, for body metrics) value for this record.
-    bestValue  Float
-    /// Date the current bestValue was achieved.
-    achievedAt DateTime
+  /// Current best (or latest, for body metrics) value for this record.
+  bestValue  Float
+  /// Date the current bestValue was achieved.
+  achievedAt DateTime
 
-    /// Optional goal the user is chasing for this record.
-    targetValue Float?
-    targetDate  DateTime?
+  /// Optional goal the user is chasing for this record.
+  targetValue Float?
+  targetDate  DateTime?
 
-    notes    String?
-    verified Boolean  @default(false)
+  notes    String?
+  verified Boolean  @default(false)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    attempts     Attempt[]
-    achievements Achievement[]
+  attempts     Attempt[]
+  achievements Achievement[]
 
-    @@unique([userId, type, name])
-    @@index([userId, type])
+  @@unique([userId, type, name])
+  @@index([userId, type])
 }
 
 model Attempt {
-    id             String       @id @default(cuid())
-    userId         String
-    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    personalBestId String
-    personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalBestId String
+  personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
 
-    value Float
-    date  DateTime
-    notes String?
-    /// Reps performed at `value` (a weight for kg/lb records), used for e1RM.
-    reps Int?
-    /// Epley estimate of the one-rep max for this entry, when reps were given.
-    estimatedOneRep Float?
-    /// True when this attempt is the record's current best.
-    isBest Boolean @default(false)
+  value Float
+  date  DateTime
+  notes String?
+  /// Reps performed at `value` (a weight for kg/lb records), used for e1RM.
+  reps Int?
+  /// Epley estimate of the one-rep max for this entry, when reps were given.
+  estimatedOneRep Float?
+  /// True when this attempt is the record's current best.
+  isBest Boolean @default(false)
 
-    createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-    @@index([personalBestId, date])
-    @@index([userId, date])
+  @@index([personalBestId, date])
+  @@index([userId, date])
 }
 
 /// Append-only log of every time a record was broken.
 /// Deliberately not recomputed: an achievement records what happened at the time.
 model Achievement {
-    id             String       @id @default(cuid())
-    userId         String
-    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-    personalBestId String
-    personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalBestId String
+  personalBest   PersonalBest @relation(fields: [personalBestId], references: [id], onDelete: Cascade)
 
-    value         Float
-    /// Previous best, null for the first entry that established the record.
-    previousValue Float?
-    date          DateTime
-    createdAt     DateTime @default(now())
+  value         Float
+  /// Previous best, null for the first entry that established the record.
+  previousValue Float?
+  date          DateTime
+  createdAt     DateTime @default(now())
 
-    @@index([userId, date])
-    @@index([personalBestId, date])
+  @@index([userId, date])
+  @@index([personalBestId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Generated training plan (personal trainer feature)
+// ---------------------------------------------------------------------------
+
+model TrainingPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  goal       String
+  experience String
+  equipment  String
+  injuries   String?
+
+  /// The structured plan the generator produced (JSON).
+  planJson String
+  /// Rendered HTML shown in the UI.
+  planHtml String
+  /// Your baseline numbers at the time the plan was generated (JSON).
+  baselineJson String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

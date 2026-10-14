@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -31,11 +32,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(parsed.data.password, user.password);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        onboardingCompleted: Boolean(user.onboardingCompleted),
+      };
       },
     }),
   ],
 });
+
+export type SessionUser = {
+  id: string;
+  email: string;
+  name?: string | null;
+  onboardingCompleted: boolean;
+};
 
 export const getCurrentUser = cache(async () => {
   try {
@@ -47,9 +60,22 @@ export const getCurrentUser = cache(async () => {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        onboardingCompleted: true,
+      },
     });
 
-    return user;
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      onboardingCompleted: Boolean(user.onboardingCompleted),
+    };
   } catch {
     return null;
   }

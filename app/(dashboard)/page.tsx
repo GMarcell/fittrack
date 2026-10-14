@@ -11,6 +11,8 @@ import { PersonalBestList } from "@/components/personal-bests/personal-best-list
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatValue } from "@/lib/personal-best";
+import { OnboardingResetButton } from "@/components/onboarding-reset-button";
+import { baselineCard } from "@/lib/onboarding-plan";
 
 export const metadata: Metadata = {
   title: "Dashboard — PR Tracker",
@@ -30,6 +32,7 @@ export default async function DashboardPage() {
     lastAchievement,
     prsLast30Days,
     improvedLast30Days,
+    currentPlan,
   ] = await Promise.all([
     prisma.personalBest.findMany({
       where: { userId: user.id },
@@ -74,8 +77,24 @@ export default async function DashboardPage() {
         previousValue: true,
         personalBest: { select: { name: true, unit: true } },
       },
+    }),      prisma.trainingPlan.findFirst({
+      where: { userId: user.id },
+      orderBy: { updatedAt: "desc" },
+      select: { planHtml: true, baselineJson: true },
     }),
   ]);
+
+  let currentBaselineHtml = "";
+  if (currentPlan?.baselineJson) {
+    try {
+      const baseline = JSON.parse(currentPlan.baselineJson) as {
+        assessments: Array<{ name: string; value: number; unit: string }>;
+      };
+      currentBaselineHtml = baselineCard({ assessments: baseline.assessments });
+    } catch {
+      currentBaselineHtml = "";
+    }
+  }
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -194,6 +213,39 @@ export default async function DashboardPage() {
       </Card>
 
       <RecentActivity activity={recentAttempts} />
+
+      {currentPlan && (
+        <div className="space-y-4">
+          {currentBaselineHtml && (
+            <div
+              className="whitespace-pre-wrap text-sm"
+              dangerouslySetInnerHTML={{ __html: currentBaselineHtml }}
+            />
+          )}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">This week</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/training-plan"
+                    className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    View full plan →
+                  </Link>
+                  <OnboardingResetButton />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="max-h-[50vh] overflow-y-auto whitespace-pre-wrap text-sm"
+                dangerouslySetInnerHTML={{ __html: currentPlan.planHtml }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

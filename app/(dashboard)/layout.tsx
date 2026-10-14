@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DesktopNav, MobileTabs } from "@/components/dashboard/nav-links";
+import type { SessionUser } from "@/lib/auth";
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +15,11 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // First-time users complete the onboarding flow before seeing the dashboard.
+  if (!((user as SessionUser).onboardingCompleted)) {
+    redirect("/onboarding");
+  }
 
 
   return (

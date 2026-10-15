@@ -9,7 +9,14 @@ import { PrFeed } from "@/components/dashboard/pr-feed";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { PersonalBestList } from "@/components/personal-bests/personal-best-list";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, type SessionUser } from "@/lib/auth";
+import {
+  dateKeyInTimezone,
+  findPlannedDay,
+  isRestDay,
+  parsePlan,
+  weekdayInTimezone,
+} from "@/lib/session";
 import { formatValue } from "@/lib/personal-best";
 import { OnboardingResetButton } from "@/components/onboarding-reset-button";
 import { baselineCard } from "@/lib/onboarding-plan";
@@ -25,6 +32,9 @@ export default async function DashboardPage() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
   const [
     records,
     recentAttempts,
@@ -33,6 +43,7 @@ export default async function DashboardPage() {
     prsLast30Days,
     improvedLast30Days,
     currentPlan,
+    openSessions,
   ] = await Promise.all([
     prisma.personalBest.findMany({
       where: { userId: user.id },
@@ -78,9 +89,21 @@ export default async function DashboardPage() {
         personalBest: { select: { name: true, unit: true } },
       },
     }),      prisma.trainingPlan.findFirst({
-      where: { userId: user.id },
-      orderBy: { updatedAt: "desc" },
-      select: { planHtml: true, baselineJson: true },
+        where: { userId: user.id },
+        orderBy: { updatedAt: "desc" },
+        select: { planHtml: true, baselineJson: true, planJson: true },
+      }),
+    prisma.workoutSession.findMany({
+      where: {
+        userId: user.id,
+        completedAt: null,
+        date: { gte: twoDaysAgo },
+      },
+      include: {
+        exercises: {
+          include: { sets: { select: { id: true } } },
+        },
+      },
     }),
   ]);
 
@@ -129,6 +152,19 @@ export default async function DashboardPage() {
     return best;
   }, null);
 
+  const tz = (user as SessionUser).timezone || "Asia/Jakarta";
+  const nowDate = new Date();
+  const todayKey = dateKeyInTimezone(nowDate, tz);
+  const dayName = weekdayInTimezone(nowDate, tz);
+  const weekPlan = currentPlan ? parsePlan(currentPlan.planJson) : null;
+  const plannedDay = weekPlan ? findPlannedDay(weekPlan, dayName) : null;
+  const plannedIsRest = plannedDay ? isRestDay(plannedDay) : false;
+  const todaysSession =
+    openSessions.find((s) => dateKeyInTimezone(s.date, tz) === todayKey) ?? null;
+  const setsLoggedToday = todaysSession
+    ? todaysSession.exercises.reduce((n, e) => n + e.sets.length, 0)
+    : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -156,6 +192,34 @@ export default async function DashboardPage() {
           },
         ]}
       />
+
+      {plannedDay && (
+        <Card className={plannedIsRest ? "" : "border-primary/40"}>
+          <CardContent className="flex items-center justify-between gap-3 py-4">
+            <div>
+              <p className="text-sm font-medium">
+                {plannedIsRest
+                  ? "Today: rest & recovery"
+                  : `Today: ${plannedDay.sessionType}`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {plannedIsRest
+                  ? "No session planned — a walk and some stretching is plenty."
+                  : todaysSession
+                    ? `Session started · ${setsLoggedToday} ${setsLoggedToday === 1 ? "set" : "sets"} logged`
+                    : `${plannedDay.mainWorkout.length} exercises planned`}
+              </p>
+            </div>
+            {!plannedIsRest && (
+              <Button asChild size="sm">
+                <Link href="/today" transitionTypes={["nav-forward"]}>
+                  {todaysSession ? "Resume →" : "Start session →"}
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <ConsistencyCard
         lastPrAt={lastAchievement?.date ?? null}

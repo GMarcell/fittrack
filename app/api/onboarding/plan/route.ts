@@ -4,56 +4,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { chatCompletion } from "@/lib/groq";
 import { ASSESSMENT_EXERCISES } from "@/lib/onboarding";
 import { planToHtml, baselineCard } from "@/lib/onboarding-plan";
+import { PLAN_JSON_SCHEMA } from "@/lib/plan-schema";
 import { z } from "zod";
 
 const schema = z.object({
   exerciseIds: z.array(z.string().min(1)).min(1),
 });
-
-const PLAN_JSON_SCHEMA = {
-  name: "TrainingPlan",
-  strict: true,
-  schema: {
-    type: "object",
-    properties: {
-      goal: { type: "string" },
-      experience: { type: "string" },
-      equipment: { type: "string" },
-      weeklySchedule: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            day: { type: "string" },
-            sessionType: { type: "string" },
-            warmUp: { type: "array", items: { type: "string" } },
-            mainWorkout: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  exercise: { type: "string" },
-                  sets: { type: "integer" },
-                  reps: { type: "string" },
-                  rpe: { type: "string" },
-                  notes: { type: "string" },
-                },
-                required: ["exercise", "sets", "reps"],
-                additionalProperties: false,
-              },
-            },
-            cooldown: { type: "array", items: { type: "string" } },
-          },
-          required: ["day", "sessionType", "mainWorkout"],
-          additionalProperties: false,
-        },
-      },
-      notes: { type: "string" },
-    },
-    required: ["goal", "experience", "equipment", "weeklySchedule", "notes"],
-    additionalProperties: false,
-  },
-};
 
 function assessmentResults(userId: string, exerciseIds: string[]) {
   return prisma.personalBest.findMany({
@@ -116,7 +72,7 @@ export async function POST(req: Request) {
       : "I haven't done the fitness checks yet, so I have no baseline numbers.";
 
   const systemPrompt = `You are a personal trainer helping one client.`;
-  const userPrompt = `Here is my onboarding context:\n\n- Goal: ${goal}\n- Experience level: ${experience}\n- Equipment: ${equipment}\n${injuries ? `- Injuries / things to work around: ${injuries}` : ""}\n${baselineSummary}\n\nPlease write a weekly training plan for me. Return ONLY a JSON object matching this exact schema — no markdown, no explanation before or after:\n\n${JSON.stringify(PLAN_JSON_SCHEMA.schema, null, 2)}\n\nRules:\n- 3–5 days of structured sessions; the rest are rest or light recovery days.\n- Match the plan to the goal and experience level. Beginners get simpler sessions and more rest.\n- Use the exercises and equipment the client has access to.\n- Give sets, reps and an RPE where it makes sense; for endurance, use distance/time instead of reps.\n- Keep it realistic and progressive — a first week, not a peak week.\n- Include a short warm-up and cool-down per session.\n- The notes field should be 2–4 sentences of coaching advice.`;
+  const userPrompt = `Here is my onboarding context:\n\n- Goal: ${goal}\n- Experience level: ${experience}\n- Equipment: ${equipment}\n${injuries ? `- Injuries / things to work around: ${injuries}` : ""}\n${baselineSummary}\n\nPlease write a weekly training plan for me. Return ONLY a JSON object matching this exact schema — no markdown, no explanation before or after:\n\n${JSON.stringify(PLAN_JSON_SCHEMA.schema, null, 2)}\n\nRules:\n- 3–5 days of structured sessions; the rest are rest or light recovery days.\n- Match the plan to the goal and experience level. Beginners get simpler sessions and more rest.\n- Use the exercises and equipment the client has access to.\n- Give sets, reps and an RPE where it makes sense; for endurance, use distance/time instead of reps.\n- Keep it realistic and progressive — a first week, not a peak week.\n- Include a short warm-up and cool-down per session.\\n- Tag every exercise with the muscleGroup it primarily trains.\n- The notes field should be 2–4 sentences of coaching advice.`;
 
   try {
     const raw = await chatCompletion(
@@ -125,7 +81,6 @@ export async function POST(req: Request) {
         { role: "user", content: userPrompt },
       ],
       {
-        model: "llama-3.3-70b-versatile",
         temperature: 0.2,
         maxTokens: 4096,
         jsonSchema: PLAN_JSON_SCHEMA,
@@ -151,24 +106,15 @@ export async function POST(req: Request) {
     });
     const fullPlan = Object.assign(parsedPlan, { _baselineHtml: baselineHtml }) as Parameters<typeof planToHtml>[0] & { _baselineHtml: string };
 
-    // Persist the generated plan for the dashboard (upsert = one current plan per user).
-    await prisma.trainingPlan.upsert({
-      where: { id: `${user.id}-current` },
-      create: {
+    // Persist the generated plan; previous plans stay as history.
+    await prisma.trainingPlan.create({
+      data: {
         userId: user.id,
         goal: parsedPlan.goal,
         experience: parsedPlan.experience,
         equipment: parsedPlan.equipment,
         injuries: injuries || null,
-        planJson: JSON.stringify(parsedPlan),
-        planHtml: planToHtml(fullPlan),
-        baselineJson: JSON.stringify(baseline),
-      },
-      update: {
-        goal: parsedPlan.goal,
-        experience: parsedPlan.experience,
-        equipment: parsedPlan.equipment,
-        injuries: injuries || null,
+        source: "onboarding",
         planJson: JSON.stringify(parsedPlan),
         planHtml: planToHtml(fullPlan),
         baselineJson: JSON.stringify(baseline),

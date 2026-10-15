@@ -8,6 +8,9 @@ if (!apiKey) {
   );
 }
 
+/** Groq retires models regularly — keep the name in .env so it is a config change, not a release. */
+export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
+
 interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -25,7 +28,7 @@ export async function chatCompletion(
   options: ChatCompletionOptions = {},
 ): Promise<string> {
   const body: Record<string, unknown> = {
-    model: options.model ?? "llama-3.3-70b-versatile",
+    model: options.model ?? DEFAULT_MODEL,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     temperature: options.temperature ?? 0.2,
     max_completion_tokens: options.maxTokens ?? 4096,

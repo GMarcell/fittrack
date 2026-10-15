@@ -8,17 +8,20 @@ type NavItem = { href: string; label: string; transitionType: string };
 
 const DESKTOP_LINKS: NavItem[] = [
   { href: "/", label: "Dashboard", transitionType: "nav-back" },
+  { href: "/today", label: "Today", transitionType: "nav-forward" },
   { href: "/personal-bests", label: "Personal Bests", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body Metrics", transitionType: "nav-forward" },
   { href: "/progress", label: "Progress", transitionType: "nav-forward" },
   { href: "/training-plan", label: "Training plan", transitionType: "nav-forward" },
+  { href: "/coach", label: "Coach", transitionType: "nav-forward" },
 ];
 
 type MobileTab = NavItem & { icon: string };
 
 const MOBILE_TABS: MobileTab[] = [
   { href: "/", label: "Home", icon: "★", transitionType: "nav-back" },
-  { href: "/personal-bests", label: "PRs", icon: "🏋", transitionType: "nav-forward" },
+  { href: "/today", label: "Today", icon: "🏋", transitionType: "nav-forward" },
+  { href: "/personal-bests", label: "PRs", icon: "🥇", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body", icon: "📏", transitionType: "nav-forward" },
   { href: "/progress", label: "Chart", icon: "📈", transitionType: "nav-forward" },
   { href: "/training-plan", label: "Plan", icon: "📋", transitionType: "nav-forward" },
@@ -70,7 +73,7 @@ export function MobileTabs() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border sm:hidden z-50">
-      <div className="grid grid-cols-4 h-14">
+      <div className="grid h-14" style={{ gridTemplateColumns: `repeat(${MOBILE_TABS.length}, minmax(0, 1fr))` }}>
         {MOBILE_TABS.map((tab) => {
           const active = isActive(tab.href, pathname);
           return (

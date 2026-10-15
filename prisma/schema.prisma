@@ -53,10 +53,12 @@ model User {
   equipment       String? @default("bodyweight")
   injuries        String?
 
-  personalBests PersonalBest[]
-  attempts      Attempt[]
-  achievements  Achievement[]
-  trainingPlans TrainingPlan[]
+  personalBests  PersonalBest[]
+  attempts       Attempt[]
+  achievements   Achievement[]
+  trainingPlans  TrainingPlan[]
+  workoutSessions WorkoutSession[]
+  chatMessages   ChatMessage[]
 }
 
 model PersonalBest {
@@ -147,6 +149,11 @@ model TrainingPlan {
   equipment  String
   injuries   String?
 
+  /// "onboarding" for the first plan, "checkin" for adaptive regenerations.
+  source  String @default("onboarding")
+  /// Coach's summary of what changed and why (set on check-in updates).
+  summary String?
+
   /// The structured plan the generator produced (JSON).
   planJson String
   /// Rendered HTML shown in the UI.
@@ -158,4 +165,82 @@ model TrainingPlan {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Workout sessions (execute the plan, log what you actually did)
+// ---------------------------------------------------------------------------
+
+model WorkoutSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+  /// Plan day this session follows, e.g. "Monday" (null for ad-hoc sessions).
+  planDay     String?
+  sessionType String?
+  notes       String?
+  /// Set when the session is finished; triggers PB sync.
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exercises SessionExercise[]
+
+  @@index([userId, date])
+}
+
+model SessionExercise {
+  id        String @id @default(cuid())
+  sessionId String
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  name        String
+  muscleGroup String?
+  /// "KG" | "LB" when the exercise is loaded; null for bodyweight/timed work.
+  unit        String?
+  targetSets  Int?
+  repTarget   String?
+  rpeTarget   String?
+  sortOrder   Int    @default(0)
+
+  sets SetEntry[]
+
+  @@index([sessionId])
+}
+
+model SetEntry {
+  id                String @id @default(cuid())
+  sessionExerciseId String
+  sessionExercise   SessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
+
+  setNumber Int
+  weight    Float?
+  reps      Int
+  rpe       Float?
+  /// Attempt created from this set when the session was completed (best set only).
+  attemptId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionExerciseId])
+}
+
+// ---------------------------------------------------------------------------
+// Coach chat
+// ---------------------------------------------------------------------------
+
+model ChatMessage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role    String /// "user" | "assistant"
+  content String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

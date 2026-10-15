@@ -38,6 +38,7 @@ export function planToHtml(plan: {
       reps: string;
       rpe?: string;
       notes?: string;
+      muscleGroup?: string;
     }>;
     cooldown?: string[] | null;
   }>;
@@ -79,7 +80,10 @@ export function planToHtml(plan: {
     for (const ex of day.mainWorkout) {
       const rpe = ex.rpe ? ` · ${escapeHtml(ex.rpe)}` : "";
       const notes = ex.notes ? ` — ${escapeHtml(ex.notes)}` : "";
-      html += `<li><span class="font-medium">${escapeHtml(ex.exercise)}</span> — ${ex.sets}×${escapeHtml(ex.reps)}${rpe}${notes}</li>`;
+      const group = ex.muscleGroup
+        ? ` <span class="rounded border border-border px-1 text-[10px] capitalize text-muted-foreground">${escapeHtml(ex.muscleGroup)}</span>`
+        : "";
+      html += `<li><span class="font-medium">${escapeHtml(ex.exercise)}</span>${group} — ${ex.sets}×${escapeHtml(ex.reps)}${rpe}${notes}</li>`;
     }
     html += `</ul>`;
 

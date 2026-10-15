@@ -48,6 +48,7 @@ export type SessionUser = {
   email: string;
   name?: string | null;
   onboardingCompleted: boolean;
+  timezone: string;
 };
 
 export const getCurrentUser = cache(async () => {
@@ -65,6 +66,7 @@ export const getCurrentUser = cache(async () => {
         email: true,
         name: true,
         onboardingCompleted: true,
+        timezone: true,
       },
     });
 
@@ -75,6 +77,7 @@ export const getCurrentUser = cache(async () => {
       email: user.email,
       name: user.name,
       onboardingCompleted: Boolean(user.onboardingCompleted),
+      timezone: user.timezone,
     };
   } catch {
     return null;

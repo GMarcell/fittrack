@@ -1,3 +1,5 @@
+import { formatEquipment } from "@/lib/onboarding";
+
 export interface PlanBaseline {
   assessments: Array<{ name: string; value: number; unit: string }>;
 }
@@ -58,7 +60,7 @@ export function planToHtml(plan: {
 
   let html = `<div class="space-y-4">`;
   html += `<div class="rounded-lg bg-primary/10 border border-primary/20 p-4 text-sm">`;
-  html += `<p class="font-medium text-primary">Goal: ${escapeHtml(plan.goal)} · ${escapeHtml(plan.experience)} level · ${escapeHtml(plan.equipment)}</p>`;
+  html += `<p class="font-medium text-primary">Goal: ${escapeHtml(plan.goal)} · ${escapeHtml(plan.experience)} level · ${escapeHtml(formatEquipment(plan.equipment))}</p>`;
   html += `</div>`;
 
   for (const day of plan.weeklySchedule) {

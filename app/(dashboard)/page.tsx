@@ -15,8 +15,11 @@ import {
   findPlannedDay,
   isRestDay,
   parsePlan,
+  trainingStreak,
   weekdayInTimezone,
+  weeklyAdherence,
 } from "@/lib/session";
+import { WeeklyAdherenceCard } from "@/components/dashboard/weekly-adherence-card";
 import { formatValue } from "@/lib/personal-best";
 import { OnboardingResetButton } from "@/components/onboarding-reset-button";
 import { baselineCard } from "@/lib/onboarding-plan";
@@ -44,6 +47,7 @@ export default async function DashboardPage() {
     improvedLast30Days,
     currentPlan,
     openSessions,
+    completedSessions,
   ] = await Promise.all([
     prisma.personalBest.findMany({
       where: { userId: user.id },
@@ -105,6 +109,12 @@ export default async function DashboardPage() {
         },
       },
     }),
+    prisma.workoutSession.findMany({
+      where: { userId: user.id, completedAt: { not: null } },
+      select: { date: true, planDay: true, completedAt: true },
+      orderBy: { date: "desc" },
+      take: 300,
+    }),
   ]);
 
   let currentBaselineHtml = "";
@@ -164,6 +174,8 @@ export default async function DashboardPage() {
   const setsLoggedToday = todaysSession
     ? todaysSession.exercises.reduce((n, e) => n + e.sets.length, 0)
     : 0;
+  const adherence = weeklyAdherence(completedSessions, weekPlan, nowDate, tz);
+  const streak = trainingStreak(completedSessions, nowDate, tz);
 
   return (
     <div className="space-y-6">
@@ -220,6 +232,13 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <WeeklyAdherenceCard
+        planned={adherence.planned}
+        completed={adherence.completed}
+        percent={adherence.percent}
+        streak={streak}
+      />
 
       <ConsistencyCard
         lastPrAt={lastAchievement?.date ?? null}

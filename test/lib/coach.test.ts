@@ -35,6 +35,17 @@ describe("buildCoachMessages", () => {
     expect(system).toContain("Sessions: 3");
   });
 
+  it("adds the client's available equipment when provided", () => {
+    const system = buildCoachMessages({ ...base, equipment: "dumbbells,bench" })[0].content;
+    expect(system).toContain("EQUIPMENT AVAILABLE");
+    expect(system).toContain("Dumbbells, Flat bench");
+  });
+
+  it("omits the equipment block when no equipment is known", () => {
+    const system = buildCoachMessages(base)[0].content;
+    expect(system).not.toContain("EQUIPMENT AVAILABLE");
+  });
+
   it("says so when there is no plan yet", () => {
     const system = buildCoachMessages({ ...base, planSummary: null })[0].content;
     expect(system).toContain("No plan on file");

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatDate } from "@/lib/personal-best";
+import { formatEquipment } from "@/lib/onboarding";
 
 export const metadata: Metadata = { title: "Past plan — PR Tracker" };
 
@@ -39,7 +40,7 @@ export default async function PlanHistoryPage({ params }: RouteContext) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{plan.goal} · {plan.experience} · {plan.equipment}</CardTitle>
+          <CardTitle className="text-base">{plan.goal} · {plan.experience} · {formatEquipment(plan.equipment)}</CardTitle>
         </CardHeader>
         <CardContent>
           <div

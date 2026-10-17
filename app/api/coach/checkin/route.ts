@@ -6,6 +6,7 @@ import { CHECKIN_JSON_SCHEMA } from "@/lib/plan-schema";
 import { planToHtml, baselineCard } from "@/lib/onboarding-plan";
 import { buildPerformanceReport } from "@/lib/coach";
 import { parsePlan } from "@/lib/session";
+import { equipmentForPrompt, formatEquipment } from "@/lib/onboarding";
 
 /**
  * POST /api/coach/checkin — the weekly coach review. Reads the last two weeks
@@ -42,7 +43,7 @@ export async function POST() {
   const injuries = userRecord?.injuries ?? "";
 
   const systemPrompt = `You are a personal trainer reviewing one client's week and adjusting their program. Be decisive and specific: change loads, reps or exercise selection based on the data, do not just rewrite the same plan.`;
-  const userPrompt = `My goal: ${goal}. Experience: ${experience}. Equipment: ${equipment}.${injuries ? ` Injuries to work around: ${injuries}.` : ""}
+  const userPrompt = `My goal: ${goal}. Experience: ${experience}. Equipment I have: ${equipmentForPrompt(equipment)}${injuries ? ` Injuries to work around: ${injuries}.` : ""}
 
 My current plan (JSON):
 ${JSON.stringify(plan?.weeklySchedule ?? [], null, 1)}
@@ -55,6 +56,7 @@ Write next week's plan in the same JSON schema below. Rules:
 - If lifts stalled or RPE ran hot (9+), include a deload or drop a set per exercise.
 - If everything felt easy and PRs fell, progress the loads or add a set.
 - Keep the exercise names consistent with the current plan so progress stays comparable, unless an exercise must be swapped (injury, equipment).
+- Do not introduce any exercise that needs equipment I do not have. Use only the equipment listed above plus bodyweight.
 - The summary field: 2-3 sentences to the client on what changed and why.
 - weeklySchedule must cover all 7 days, mainWorkout must not be empty except on rest/recovery days (use [] then), warmUp/cooldown/rpe/notes must be present (use empty strings/arrays when not applicable).
 
@@ -71,6 +73,10 @@ ${JSON.stringify(CHECKIN_JSON_SCHEMA.schema, null, 2)}`;
     );
 
     const newPlan = JSON.parse(raw) as Parameters<typeof planToHtml>[0] & { summary: string };
+
+    // Keep the stored plan honest about the equipment it was built for.
+    const equipmentLabel = formatEquipment(equipment);
+    newPlan.equipment = equipmentLabel;
 
     let baselineHtml = "";
     if (currentPlan.baselineJson) {
@@ -89,7 +95,7 @@ ${JSON.stringify(CHECKIN_JSON_SCHEMA.schema, null, 2)}`;
         userId: user.id,
         goal: newPlan.goal,
         experience: newPlan.experience,
-        equipment: newPlan.equipment,
+        equipment: equipmentLabel,
         injuries: injuries || null,
         source: "checkin",
         summary: newPlan.summary ?? null,

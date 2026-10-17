@@ -34,6 +34,11 @@ export default async function DashboardLayout({
           <DesktopNav />
 
           <div className="hidden sm:flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/settings" aria-label="Settings">
+                ⚙
+              </Link>
+            </Button>
             <ThemeToggle />
             <Button asChild size="sm">
               <Link href="/personal-bests/new">Log PR</Link>
@@ -43,6 +48,11 @@ export default async function DashboardLayout({
 
           {/* Mobile: just log a PR + logout */}
           <div className="flex sm:hidden items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/settings" aria-label="Settings">
+                ⚙
+              </Link>
+            </Button>
             <ThemeToggle />
             <Button asChild size="sm">
               <Link href="/personal-bests/new">+ Log</Link>
@@ -55,7 +65,7 @@ export default async function DashboardLayout({
       <MobileTabs />
 
       {/* Main content — add bottom padding on mobile for tab bar */}
-      <main className="mx-auto max-w-3xl p-4 pb-20 sm:pb-6">
+      <main className="mx-auto max-w-3xl p-4 pb-20 lg:pb-6">
         <ViewTransition
           enter={{
             "nav-forward": "nav-forward",

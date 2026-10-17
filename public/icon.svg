@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PR Tracker">
+  <rect width="512" height="512" rx="112" fill="#0b0b0c" />
+  <g fill="none" stroke="#a3e635" stroke-width="26" stroke-linecap="round">
+    <path d="M132 256h248" />
+    <path d="M180 196v120" />
+    <path d="M140 216v80" />
+    <path d="M332 196v120" />
+    <path d="M372 216v80" />
+  </g>
+</svg>

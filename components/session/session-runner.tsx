@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { muscleCoverage, sessionTonnage } from "@/lib/session";
+import { MUSCLE_GROUP_LABELS } from "@/lib/muscle-groups";
+import {
+  flushQueuedSets,
+  isOfflineQueuedId,
+  queueSet,
+  queuedSetCount,
+  removeQueuedSet,
+  subscribeToQueue,
+} from "@/lib/offline-queue";
 
 export type RunnerSet = {
   id: string;
@@ -43,6 +53,19 @@ type SessionRunnerProps = {
 
 const REST_PRESETS = [60, 90, 120, 180];
 
+function subscribeToConnection(listener: () => void) {
+  window.addEventListener("online", listener);
+  window.addEventListener("offline", listener);
+  return () => {
+    window.removeEventListener("online", listener);
+    window.removeEventListener("offline", listener);
+  };
+}
+
+function isCurrentlyOffline() {
+  return typeof navigator === "undefined" ? false : !navigator.onLine;
+}
+
 function firstRepOf(repTarget: string | null): string {
   const nums = repTarget?.match(/\d+/);
   return nums ? nums[0] : "";
@@ -60,10 +83,45 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
   const [restSeconds, setRestSeconds] = useState(90);
   const [extraName, setExtraName] = useState("");
   const [adding, setAdding] = useState(false);
+  const offline = useSyncExternalStore(
+    subscribeToConnection,
+    isCurrentlyOffline,
+    () => false,
+  );
+  const queuedCount = useSyncExternalStore(
+    subscribeToQueue,
+    queuedSetCount,
+    () => 0,
+  );
+
+  // Logging a set must work in a gym basement. Anything written while offline
+  // lives in localStorage and is replayed when the connection returns.
+  useEffect(() => {
+    if (offline) return;
+    let cancelled = false;
+    void flushQueuedSets().then((result) => {
+      if (!cancelled && result.synced > 0 && result.remaining === 0) router.refresh();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [offline, router]);
 
   const totalSets = useMemo(
     () => list.reduce((n, ex) => n + ex.sets.length, 0),
     [list],
+  );
+
+  const recap = useMemo(
+    () => ({
+      tonnage: sessionTonnage(list),
+      coverage: muscleCoverage(list),
+    }),
+    [list],
+  );
+
+  const personalBests = (syncResults ?? []).filter(
+    (result) => result.logged && result.isPersonalBest,
   );
 
   async function api(path: string, init?: RequestInit) {
@@ -94,8 +152,28 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
     );
   }
 
+  function storeOffline(exerciseId: string, weight: number | null, reps: number, rpe: number | null) {
+    const setNumber =
+      (list.find((exercise) => exercise.id === exerciseId)?.sets.length ?? 0) + 1;
+    const queued = queueSet({ sessionId: session.id, exerciseId, weight, reps, rpe });
+    addSetLocally(exerciseId, {
+      id: queued.id,
+      setNumber,
+      weight,
+      reps,
+      rpe,
+    });
+    setRestEndsAt(Date.now() + restSeconds * 1000);
+  }
+
   async function handleAddSet(exerciseId: string, weight: number | null, reps: number, rpe: number | null) {
     setError(null);
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      storeOffline(exerciseId, weight, reps, rpe);
+      return;
+    }
+
     try {
       const { set } = await api(`/api/sessions/${session.id}/sets`, {
         method: "POST",
@@ -110,12 +188,23 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
       });
       setRestEndsAt(Date.now() + restSeconds * 1000);
     } catch (e) {
+      if (e instanceof TypeError || (typeof navigator !== "undefined" && !navigator.onLine)) {
+        storeOffline(exerciseId, weight, reps, rpe);
+        return;
+      }
       setError(e instanceof Error ? e.message : "Could not log set");
     }
   }
 
   async function handleRemoveSet(exerciseId: string, setId: string) {
     setError(null);
+
+    if (isOfflineQueuedId(setId)) {
+      removeQueuedSet(setId);
+      removeSetLocally(exerciseId, setId);
+      return;
+    }
+
     try {
       await api(`/api/sessions/${session.id}/sets/${setId}`, { method: "DELETE" });
       removeSetLocally(exerciseId, setId);
@@ -196,7 +285,13 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
       setCompleted(true);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not finish session");
+      setError(
+        typeof navigator !== "undefined" && !navigator.onLine
+          ? "You're offline — reconnect to finish and save this session."
+          : e instanceof Error
+            ? e.message
+            : "Could not finish session",
+      );
     } finally {
       setFinishing(false);
     }
@@ -212,6 +307,14 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
             {plan.notes && <p className="pt-1 italic">“{plan.notes}”</p>}
           </CardContent>
         </Card>
+      )}
+
+      {(offline || queuedCount > 0) && !completed && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+          {offline
+            ? "Offline — sets are saved on this device and sync when you reconnect."
+            : `${queuedCount} ${queuedCount === 1 ? "set" : "sets"} waiting to sync…`}
+        </div>
       )}
 
       <RestTimer
@@ -272,33 +375,89 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
         </Card>
       )}
 
-      {completed && syncResults && (
+      {completed && (
         <Card className="border-primary/40">
           <CardHeader>
             <CardTitle className="text-base">🎉 Session complete</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 text-sm">
-            {syncResults.filter((s) => s.logged).length === 0 && (
-              <p className="text-muted-foreground">
-                Logged into your history. No record was matched or beaten this time — keep stacking work.
-              </p>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-lg border border-border py-2">
+                <p className="text-lg font-semibold tabular-nums">{totalSets}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {totalSets === 1 ? "set" : "sets"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border py-2">
+                <p className="text-lg font-semibold tabular-nums">
+                  {recap.tonnage > 0
+                    ? Math.round(recap.tonnage).toLocaleString("en-GB")
+                    : "—"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {recap.tonnage > 0 ? "kg lifted" : "bodyweight work"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border py-2">
+                <p className="text-lg font-semibold tabular-nums">
+                  {syncResults ? personalBests.length : "—"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {personalBests.length === 1 ? "new PR" : "new PRs"}
+                </p>
+              </div>
+            </div>
+
+            {recap.coverage.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {recap.coverage.map((c) => (
+                  <Badge key={c.group} variant="outline" className="text-[10px]">
+                    {MUSCLE_GROUP_LABELS[c.group]} · {c.sets}
+                  </Badge>
+                ))}
+              </div>
             )}
-            {syncResults
-              .filter((s) => s.logged)
-              .map((s) =>
-                s.isPersonalBest ? (
+
+            {personalBests.length > 0 ? (
+              <div className="space-y-1">
+                {personalBests.map((s) => (
                   <p key={s.name}>
                     <span className="font-medium text-primary">New PR: {s.name}</span>
-                    {s.previousValue !== null && <span className="text-xs text-muted-foreground"> (previous {s.previousValue})</span>}
+                    {s.previousValue !== null && (
+                      <span className="text-xs text-muted-foreground">
+                        {" "}
+                        (previous {s.previousValue})
+                      </span>
+                    )}
                   </p>
-                ) : (
-                  <p key={s.name} className="text-muted-foreground">{s.name} — logged</p>
-                ),
-              )}
+                ))}
+              </div>
+            ) : syncResults ? (
+              <p className="text-muted-foreground">
+                Logged into your history. No record was beaten this time — the work still counts.
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                This session is in your history. The volume above is what you actually did.
+              </p>
+            )}
+
+            <p className="rounded-lg bg-accent/60 px-3 py-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Next time: </span>
+              {personalBests.length > 0
+                ? "progress the load on the lifts that moved, and keep the rest steady."
+                : "match this session, then add a rep or a little weight to one exercise."}
+            </p>
+
             {error && <p className="text-xs text-destructive">{error}</p>}
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => router.push("/")}>
-              Back to dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push("/workouts")}>
+                View history
+              </Button>
+              <Button size="sm" className="flex-1" onClick={() => router.push("/")}>
+                Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -307,6 +466,39 @@ export function SessionRunner({ session, exercises, plan }: SessionRunnerProps) 
 }
 
 // ---------------------------------------------------------------------------
+
+/** Best-effort beep + haptic when the rest countdown reaches zero. */
+function signalRestEnd(enabled: boolean) {
+  if (!enabled || typeof window === "undefined") return;
+
+  try {
+    const AudioCtor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtor) {
+      const ctx = new AudioCtor();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.55);
+      window.setTimeout(() => void ctx.close().catch(() => {}), 700);
+    }
+  } catch {
+    // Audio can be blocked by the browser; the timer still ends normally.
+  }
+
+  try {
+    navigator.vibrate?.([200, 100, 200]);
+  } catch {
+    // Vibration is not available on most desktops.
+  }
+}
 
 function RestTimer({
   endsAt,
@@ -324,6 +516,7 @@ function RestTimer({
   disabled: boolean;
 }) {
   const [nowMs, setNowMs] = useState<number | null>(null);
+  const [sound, setSound] = useState(true);
   const endedRef = useRef(false);
 
   useEffect(() => {
@@ -334,11 +527,12 @@ function RestTimer({
       if (Date.now() >= endsAt && !endedRef.current) {
         endedRef.current = true;
         clearInterval(t);
+        signalRestEnd(sound);
         onEnd();
       }
     }, 500);
     return () => clearInterval(t);
-  }, [endsAt, onEnd]);
+  }, [endsAt, onEnd, sound]);
 
   if (disabled) return null;
 
@@ -364,6 +558,15 @@ function RestTimer({
           {p}s
         </button>
       ))}
+      <button
+        type="button"
+        onClick={() => setSound((current) => !current)}
+        aria-label={sound ? "Mute rest alert" : "Enable rest alert"}
+        title={sound ? "Sound on" : "Sound off"}
+        className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {sound ? "🔔" : "🔇"}
+      </button>
       {endsAt !== null ? (
         <span className="ml-auto tabular-nums text-sm font-semibold">
           {remaining}s ⏱

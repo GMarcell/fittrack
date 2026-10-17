@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { chatCompletion } from "@/lib/groq";
-import { ASSESSMENT_EXERCISES } from "@/lib/onboarding";
+import {
+  assessmentExerciseById,
+  equipmentForPrompt,
+  formatEquipment,
+} from "@/lib/onboarding";
 import { planToHtml, baselineCard } from "@/lib/onboarding-plan";
 import { PLAN_JSON_SCHEMA } from "@/lib/plan-schema";
 import { z } from "zod";
@@ -16,7 +20,11 @@ function assessmentResults(userId: string, exerciseIds: string[]) {
     where: {
       userId,
       type: "EXERCISE",
-      name: { in: exerciseIds.map((id) => ASSESSMENT_EXERCISES.find((e) => e.id === id)?.name).filter((n): n is NonNullable<typeof n> => n !== undefined) },
+      name: {
+        in: exerciseIds
+          .map((id) => assessmentExerciseById(id)?.name)
+          .filter((name): name is string => name !== undefined),
+      },
     },
     orderBy: { name: "asc" },
     select: { name: true, bestValue: true, unit: true },
@@ -72,7 +80,29 @@ export async function POST(req: Request) {
       : "I haven't done the fitness checks yet, so I have no baseline numbers.";
 
   const systemPrompt = `You are a personal trainer helping one client.`;
-  const userPrompt = `Here is my onboarding context:\n\n- Goal: ${goal}\n- Experience level: ${experience}\n- Equipment: ${equipment}\n${injuries ? `- Injuries / things to work around: ${injuries}` : ""}\n${baselineSummary}\n\nPlease write a weekly training plan for me. Return ONLY a JSON object matching this exact schema — no markdown, no explanation before or after:\n\n${JSON.stringify(PLAN_JSON_SCHEMA.schema, null, 2)}\n\nRules:\n- 3–5 days of structured sessions; the rest are rest or light recovery days.\n- Match the plan to the goal and experience level. Beginners get simpler sessions and more rest.\n- Use the exercises and equipment the client has access to.\n- Give sets, reps and an RPE where it makes sense; for endurance, use distance/time instead of reps.\n- Keep it realistic and progressive — a first week, not a peak week.\n- Include a short warm-up and cool-down per session.\\n- Tag every exercise with the muscleGroup it primarily trains.\n- The notes field should be 2–4 sentences of coaching advice.`;
+  const userPrompt = `Here is my onboarding context:
+
+- Goal: ${goal}
+- Experience level: ${experience}
+- Equipment I have: ${equipmentForPrompt(equipment)}
+${injuries ? `- Injuries / things to work around: ${injuries}` : ""}
+${baselineSummary}
+
+Please write a weekly training plan for me. Return ONLY a JSON object matching this exact schema — no markdown, no explanation before or after:
+
+${JSON.stringify(PLAN_JSON_SCHEMA.schema, null, 2)}
+
+Rules:
+- 3–5 days of structured sessions; the rest are rest or light recovery days.
+- Match the plan to the goal and experience level. Beginners get simpler sessions and more rest.
+- Build every warm-up, main-workout and cool-down exercise ONLY from what my equipment allows. Never program a barbell, rack, bench, machine, cable, band, pull-up bar or cardio machine I did not list.
+- If a movement needs equipment I do not have, substitute a bodyweight or available-equipment alternative and mention the swap in that exercise's notes.
+- Give sets, reps and an RPE where it makes sense; for endurance, use distance/time instead of reps.
+- Keep it realistic and progressive — a first week, not a peak week.
+- Include a short warm-up and cool-down per session.
+- Tag every exercise with the muscleGroup it primarily trains.
+- The equipment field must echo exactly this list: ${formatEquipment(equipment)}.
+- The notes field should be 2–4 sentences of coaching advice.`;
 
   try {
     const raw = await chatCompletion(
@@ -88,6 +118,10 @@ export async function POST(req: Request) {
     );
 
     const parsedPlan = JSON.parse(raw) as { weeklySchedule: unknown[]; notes: string; goal: string; experience: string; equipment: string };
+
+    // The client's saved equipment is the source of truth, not the model's echo.
+    const equipmentLabel = formatEquipment(equipment);
+    parsedPlan.equipment = equipmentLabel;
 
     // Build the baseline block from the assessment numbers we just used.
     const baseline = {
@@ -112,7 +146,7 @@ export async function POST(req: Request) {
         userId: user.id,
         goal: parsedPlan.goal,
         experience: parsedPlan.experience,
-        equipment: parsedPlan.equipment,
+        equipment: equipmentLabel,
         injuries: injuries || null,
         source: "onboarding",
         planJson: JSON.stringify(parsedPlan),

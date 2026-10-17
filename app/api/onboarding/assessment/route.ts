@@ -2,14 +2,25 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { logEntry } from "@/lib/personal-best-service";
-import { computeBest, type Direction } from "@/lib/personal-best";
-import { ASSESSMENT_EXERCISES } from "@/lib/onboarding";
+import type { Direction } from "@/lib/personal-best";
+import {
+  EQUIPMENT_VALUES,
+  assessmentExerciseById,
+  parseEquipment,
+  selectAssessmentExercises,
+  serializeEquipment,
+} from "@/lib/onboarding";
 import { z } from "zod";
 
 const goalSchema = z.object({
   goal: z.enum(["strength", "hypertrophy", "endurance", "weight_loss", "general_fitness"]),
   experience: z.enum(["beginner", "intermediate", "advanced"]),
-  equipment: z.enum(["bodyweight", "dumbbells", "full_gym", "resistance_bands"]),
+  // An array of ids is the normal shape; a single string keeps older clients
+  // (including the previous coarse options such as "full_gym") working.
+  equipment: z.union([
+    z.array(z.enum(EQUIPMENT_VALUES)).min(1, "Pick at least one equipment option"),
+    z.string().min(1),
+  ]),
   injuries: z.string().max(2000).nullable(),
   step: z.literal("goal"),
 });
@@ -20,10 +31,30 @@ const testSchema = z.object({
   step: z.literal("test"),
 });
 
-type Tx = { prisma: typeof prisma };
+/** GET /api/onboarding/assessment — the saved onboarding answers, for prefill. */
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-function exerciseConfig(exerciseId: string) {
-  return ASSESSMENT_EXERCISES.find((e) => e.id === exerciseId);
+  const record = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      fitnessGoal: true,
+      experienceLevel: true,
+      equipment: true,
+      injuries: true,
+      onboardingCompleted: true,
+    },
+  });
+
+  return NextResponse.json({
+    goal: record?.fitnessGoal ?? null,
+    experience: record?.experienceLevel ?? null,
+    equipment: parseEquipment(record?.equipment),
+    injuries: record?.injuries ?? null,
+    onboardingCompleted: record?.onboardingCompleted ?? false,
+    exercises: selectAssessmentExercises(record?.fitnessGoal, record?.equipment),
+  });
 }
 
 export async function POST(req: Request) {
@@ -39,13 +70,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const equipment = serializeEquipment(
+      Array.isArray(parsed.data.equipment) ? parsed.data.equipment : [parsed.data.equipment],
+    );
+    if (!equipment) {
+      return NextResponse.json({ error: "Unknown equipment option" }, { status: 400 });
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: user.id },
         data: {
           fitnessGoal: parsed.data.goal,
           experienceLevel: parsed.data.experience,
-          equipment: parsed.data.equipment,
+          equipment,
           injuries: parsed.data.injuries ?? null,
           onboardingCompleted: false,
         },
@@ -61,7 +99,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const exercise = exerciseConfig(parsed.data.exerciseId);
+    const exercise = assessmentExerciseById(parsed.data.exerciseId);
     if (!exercise) {
       return NextResponse.json({ error: "Unknown exercise" }, { status: 400 });
     }

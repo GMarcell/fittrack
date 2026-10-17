@@ -1,58 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ASSESSMENT_EXERCISES } from "@/lib/onboarding";
+import { ASSESSMENT_EXERCISES, type AssessmentExercise } from "@/lib/onboarding";
 
 type TestStep = "prompt" | "input" | "saving" | "generating" | "plan";
 
 export default function TestPage() {
-  const router = useRouter();
   const [step, setStep] = useState<TestStep>("prompt");
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [value, setValue] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [planHtml, setPlanHtml] = useState<string | null>(null);
-  const [planLoaded, setPlanLoaded] = useState(false);
   const [loadingRegenerate, setLoadingRegenerate] = useState(false);
   const [failedExercise, setFailedExercise] = useState<string | null>(null);
+  const [exercises, setExercises] = useState<AssessmentExercise[] | null>(null);
 
-  const exercise = ASSESSMENT_EXERCISES[exerciseIndex];
-  const isLast = exerciseIndex === ASSESSMENT_EXERCISES.length - 1;
-
+  // The assessment is chosen from the goal + equipment saved in the previous
+  // step, so it has to be fetched rather than imported as a fixed list.
   useEffect(() => {
-    setValue("");
-    setError("");
-    setFailedExercise(null);
-  }, [exerciseIndex]);
-
-  useEffect(() => {
-    if (step !== "plan") return;
-    fetch("/api/onboarding/plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ exerciseIds: ASSESSMENT_EXERCISES.map((e) => e.id) }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setPlanLoaded(true);
-        setPlanHtml((data as { planHtml?: string }).planHtml ?? null);
+    let active = true;
+    fetch("/api/onboarding/assessment")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { exercises?: AssessmentExercise[] } | null) => {
+        if (!active) return;
+        setExercises(data?.exercises?.length ? data.exercises : ASSESSMENT_EXERCISES);
       })
       .catch(() => {
-        setPlanLoaded(true);
-        setPlanHtml(null);
+        if (active) setExercises(ASSESSMENT_EXERCISES);
       });
-  }, [step]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  function handleStart() {
-    setStep("prompt");
-    setExerciseIndex(0);
-  }
+  const list = useMemo(() => exercises ?? ASSESSMENT_EXERCISES, [exercises]);
+  const exerciseIds = useMemo(() => list.map((e) => e.id), [list]);
+  const exercise = list[exerciseIndex];
+  const isLast = exerciseIndex === list.length - 1;
 
   async function handleSave() {
     if (!value || isNaN(Number(value)) || Number(value) <= 0) {
@@ -85,6 +74,9 @@ export default function TestPage() {
       await generatePlan();
     } else {
       setExerciseIndex((i) => i + 1);
+      setValue("");
+      setError("");
+      setFailedExercise(null);
       setStep("prompt");
     }
   }  async function generatePlan() {
@@ -94,7 +86,7 @@ export default function TestPage() {
       const res = await fetch("/api/onboarding/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exerciseIds: ASSESSMENT_EXERCISES.map((e) => e.id) }),
+        body: JSON.stringify({ exerciseIds }),
       });
 
       if (!res.ok) {
@@ -117,7 +109,7 @@ export default function TestPage() {
     return (
       <div className="text-center space-y-4">
         <p className="text-sm text-muted-foreground">
-          Exercise {exerciseIndex + 1} of {ASSESSMENT_EXERCISES.length}
+          Exercise {exerciseIndex + 1} of {list.length}
         </p>
         <h2 className="text-xl font-semibold">{exercise.name}</h2>
         <p className="text-sm">{exercise.instructions}</p>
@@ -138,7 +130,7 @@ export default function TestPage() {
     return (
       <div className="space-y-4">
         <div className="text-center space-y-1">
-          <p className="text-sm text-muted-foreground">Exercise {exerciseIndex + 1} of {ASSESSMENT_EXERCISES.length}</p>
+          <p className="text-sm text-muted-foreground">Exercise {exerciseIndex + 1} of {list.length}</p>
           <h2 className="text-xl font-semibold">{exercise.name}</h2>
         </div>
 
@@ -181,8 +173,8 @@ export default function TestPage() {
           <Button variant="outline" className="flex-1" size="lg" onClick={() => setStep("prompt")}>
             Back to instructions
           </Button>
-          <Button className="flex-1" size="lg" disabled={loading} onClick={handleSave}>
-            {loading ? "Logging…" : "Log result"}
+          <Button className="flex-1" size="lg" onClick={handleSave}>
+            Log result
           </Button>
         </div>
       </div>
@@ -234,10 +226,9 @@ export default function TestPage() {
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" size="lg" disabled={loadingRegenerate} onClick={generatePlan}>
             {loadingRegenerate ? "Regenerating…" : "Regenerate"}
-          </Button>            <Button className="flex-1" size="lg" asChild>
-            <a href="/">
-              Go to dashboard
-            </a>
+          </Button>
+          <Button className="flex-1" size="lg" asChild>
+            <Link href="/">Go to dashboard</Link>
           </Button>
         </div>
       </div>
@@ -251,7 +242,12 @@ export default function TestPage() {
           <CardTitle className="text-base">Step 2 of 2 · Fitness checks</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          {step === "prompt" && renderPrompt()}
+          {exercises === null && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Preparing your fitness checks…
+            </p>
+          )}
+          {exercises !== null && step === "prompt" && renderPrompt()}
           {step === "input" && renderInput()}
           {step === "saving" && (
             <div className="text-center space-y-3 py-6">

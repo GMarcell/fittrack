@@ -83,7 +83,10 @@ export default async function ProgressPage({
       <div>
         <h1 className="text-2xl font-semibold">Progress</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Track how a record has changed over time
+          Track how a record has changed over time ·{" "}
+          <Link href="/exercises" className="underline hover:text-foreground">
+            exercise progress
+          </Link>
         </p>
       </div>
 

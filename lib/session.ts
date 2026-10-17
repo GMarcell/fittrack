@@ -56,11 +56,11 @@ export function parsePlan(planJson: string): WeekPlan | null {
 }
 
 /** Weekday name in the user's timezone (User.timezone, e.g. "Asia/Jakarta"). */
-export function weekdayInTimezone(date: Date, timezone: string): string {
+export function weekdayInTimezone(date: Date, timezone?: string | null): string {
   try {
     const name = date.toLocaleDateString("en-US", {
       weekday: "long",
-      timeZone: timezone,
+      timeZone: timezone ?? undefined,
     });
     return name;
   } catch {
@@ -211,6 +211,152 @@ export function weekKey(date: Date): string {
   const diff = day === 0 ? 6 : day - 1;
   d.setUTCDate(d.getUTCDate() - diff);
   return d.toISOString().slice(0, 10);
+}
+
+/** Monday-start week key for a date in the user's timezone. */
+export function weekKeyInTimezone(date: Date, timezone?: string | null): string {
+  if (!timezone) return weekKey(date);
+  const key = dateKeyInTimezone(date, timezone);
+  const [year, month, day] = key.split("-").map(Number);
+  if (!year || !month || !day) return weekKey(date);
+  return weekKey(new Date(Date.UTC(year, month - 1, day)));
+}
+
+/** Move a "YYYY-MM-DD" key by whole weeks (negative moves back). */
+export function shiftWeekKey(key: string, weeks: number): string {
+  const [year, month, day] = key.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + weeks * 7);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Days in the plan that ask for a session (rest/recovery days excluded). */
+export function plannedTrainingDays(plan: WeekPlan | null | undefined): PlanDay[] {
+  if (!plan) return [];
+  return plan.weeklySchedule.filter((day) => !isRestDay(day));
+}
+
+export type SessionLike = {
+  date: Date;
+  planDay: string | null;
+  completedAt: Date | null;
+};
+
+export type WeeklyAdherence = {
+  /** Monday of the week being measured, "YYYY-MM-DD". */
+  weekStart: string;
+  planned: number;
+  completed: number;
+  percent: number;
+};
+
+const WEEKDAY_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+/** Monday-first index of a loosely written day name ("Mon", "Monday", …). */
+function weekdayIndex(name: string): number {
+  const lower = name.trim().toLowerCase();
+  if (lower.length < 3) return -1;
+  return WEEKDAY_ORDER.findIndex(
+    (day) => day.toLowerCase().startsWith(lower.slice(0, 3)) || lower.startsWith(day.toLowerCase().slice(0, 3)),
+  );
+}
+
+/**
+ * Plan days earlier in the current week that never got a session started.
+ * Returned most-recent-first so Today can offer the freshest miss.
+ */
+export function missedPlanDays(
+  plan: WeekPlan | null | undefined,
+  sessions: SessionLike[],
+  now: Date,
+  timezone?: string | null,
+): PlanDay[] {
+  if (!plan) return [];
+
+  const todayIndex = weekdayIndex(weekdayInTimezone(now, timezone));
+  if (todayIndex < 0) return [];
+
+  const weekStart = weekKeyInTimezone(now, timezone);
+  const covered = new Set(
+    sessions
+      .filter(
+        (session) =>
+          session.planDay !== null &&
+          weekKeyInTimezone(session.date, timezone) === weekStart,
+      )
+      .map((session) => weekdayIndex(session.planDay as string)),
+  );
+
+  return plan.weeklySchedule
+    .filter((day) => !isRestDay(day))
+    .map((day) => ({ day, index: weekdayIndex(day.day) }))
+    .filter(
+      ({ index }) => index >= 0 && index < todayIndex && !covered.has(index),
+    )
+    .sort((a, b) => b.index - a.index)
+    .map(({ day }) => day);
+}
+
+/**
+ * Planned-vs-completed sessions for the week containing `now`. Only sessions
+ * that started from a plan day count — ad-hoc workouts are not plan adherence.
+ */
+export function weeklyAdherence(
+  sessions: SessionLike[],
+  plan: WeekPlan | null | undefined,
+  now: Date,
+  timezone?: string | null,
+): WeeklyAdherence {
+  const weekStart = weekKeyInTimezone(now, timezone);
+  const planned = plannedTrainingDays(plan).length;
+  const completed = sessions.filter(
+    (s) =>
+      s.completedAt !== null &&
+      s.planDay !== null &&
+      weekKeyInTimezone(s.date, timezone) === weekStart,
+  ).length;
+
+  return {
+    weekStart,
+    planned,
+    completed,
+    percent: planned === 0 ? 0 : Math.min(100, Math.round((completed / planned) * 100)),
+  };
+}
+
+/**
+ * Consecutive weeks (ending with the current or previous week) that contain at
+ * least one completed workout. Starting on Monday with an empty current week
+ * does not break the streak.
+ */
+export function trainingStreak(
+  sessions: SessionLike[],
+  now: Date,
+  timezone?: string | null,
+): number {
+  const weeks = new Set(
+    sessions
+      .filter((s) => s.completedAt !== null)
+      .map((s) => weekKeyInTimezone(s.date, timezone)),
+  );
+
+  let cursor = weekKeyInTimezone(now, timezone);
+  if (!weeks.has(cursor)) cursor = shiftWeekKey(cursor, -1);
+
+  let streak = 0;
+  while (weeks.has(cursor)) {
+    streak += 1;
+    cursor = shiftWeekKey(cursor, -1);
+  }
+  return streak;
 }
 
 // ---------------------------------------------------------------------------

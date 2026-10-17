@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const since = new Date();
   since.setDate(since.getDate() - 14);
 
-  const [history, planRow] = await Promise.all([
+  const [history, planRow, userRecord] = await Promise.all([
     prisma.chatMessage.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -51,6 +51,10 @@ export async function POST(req: Request) {
       where: { userId: user.id },
       orderBy: { updatedAt: "desc" },
       select: { summary: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { equipment: true },
     }),
   ]);
 
@@ -68,6 +72,7 @@ export async function POST(req: Request) {
         history: history.reverse(),
         report,
         planSummary: planRow?.summary ?? null,
+        equipment: userRecord?.equipment ?? null,
         content,
       }),
       { temperature: 0.5, maxTokens: 1024 },

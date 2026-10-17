@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { baselineCard } from "@/lib/onboarding-plan";
+import { formatEquipment } from "@/lib/onboarding";
 import { CoachCheckinButton } from "@/components/coach/coach-checkin-button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,7 @@ export default async function TrainingPlanPage() {
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Current plan</CardTitle>
                 <div className="text-xs text-muted-foreground">
-                  {plan.goal} · {plan.experience} · {plan.equipment}
+                  {plan.goal} · {plan.experience} · {formatEquipment(plan.equipment)}
                 </div>
               </div>
             </CardHeader>

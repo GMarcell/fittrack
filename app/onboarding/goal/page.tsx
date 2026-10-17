@@ -1,25 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FITNESS_GOALS, EXPERIENCE_LEVELS, EQUIPMENT_OPTIONS } from "@/lib/onboarding";
+import {
+  FITNESS_GOALS,
+  EXPERIENCE_LEVELS,
+  parseEquipment,
+} from "@/lib/onboarding";
+import { EquipmentSelect } from "@/components/onboarding/equipment-select";
 
 export default function GoalPage() {
   const router = useRouter();
   const [goal, setGoal] = useState<string>("");
   const [experience, setExperience] = useState<string>("");
-  const [equipment, setEquipment] = useState<string>("");
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [injuries, setInjuries] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Coming back via "Change goals / equipment" should show the saved answers.
+  useEffect(() => {
+    let active = true;
+    fetch("/api/onboarding/assessment")
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (data: {
+          goal?: string | null;
+          experience?: string | null;
+          equipment?: string[] | string | null;
+          injuries?: string | null;
+        } | null) => {
+          if (!active || !data) return;
+          if (data.goal) setGoal(data.goal);
+          if (data.experience) setExperience(data.experience);
+          setEquipment(
+            Array.isArray(data.equipment)
+              ? parseEquipment(data.equipment.join(","))
+              : parseEquipment(data.equipment),
+          );
+          if (data.injuries) setInjuries(data.injuries);
+        },
+      )
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!goal || !experience || !equipment) {
+    if (!goal || !experience || equipment.length === 0) {
       setError("Please answer all required questions.");
       return;
     }
@@ -105,25 +139,12 @@ export default function GoalPage() {
             </div>
 
             <div>
-              <Label>What equipment do you have?</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {EQUIPMENT_OPTIONS.map((e) => (
-                  <label
-                    key={e.value}
-                    className="flex items-center gap-2 rounded-lg border border-input bg-background/50 p-3 text-sm cursor-pointer transition-colors hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                  >
-                    <input
-                      type="radio"
-                      name="equipment"
-                      value={e.value}
-                      checked={equipment === e.value}
-                      onChange={() => setEquipment(e.value)}
-                      className="mt-0.5"
-                    />
-                    {e.label}
-                  </label>
-                ))}
-              </div>
+              <Label>What equipment do you have access to?</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Tick everything you can use — your training menu will only include
+                exercises you can actually do.
+              </p>
+              <EquipmentSelect value={equipment} onChange={setEquipment} />
             </div>
 
             <div>

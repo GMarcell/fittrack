@@ -11,6 +11,7 @@ const DESKTOP_LINKS: NavItem[] = [
   { href: "/today", label: "Today", transitionType: "nav-forward" },
   { href: "/personal-bests", label: "Personal Bests", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body Metrics", transitionType: "nav-forward" },
+  { href: "/workouts", label: "Workouts", transitionType: "nav-forward" },
   { href: "/progress", label: "Progress", transitionType: "nav-forward" },
   { href: "/training-plan", label: "Training plan", transitionType: "nav-forward" },
   { href: "/coach", label: "Coach", transitionType: "nav-forward" },
@@ -22,6 +23,7 @@ const MOBILE_TABS: MobileTab[] = [
   { href: "/", label: "Home", icon: "★", transitionType: "nav-back" },
   { href: "/today", label: "Today", icon: "🏋", transitionType: "nav-forward" },
   { href: "/personal-bests", label: "PRs", icon: "🥇", transitionType: "nav-forward" },
+  { href: "/workouts", label: "History", icon: "🗓", transitionType: "nav-forward" },
   { href: "/body-metrics", label: "Body", icon: "📏", transitionType: "nav-forward" },
   { href: "/progress", label: "Chart", icon: "📈", transitionType: "nav-forward" },
   { href: "/training-plan", label: "Plan", icon: "📋", transitionType: "nav-forward" },
@@ -36,7 +38,7 @@ export function DesktopNav() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden sm:flex items-center gap-1">
+    <div className="hidden lg:flex items-center gap-1">
       {DESKTOP_LINKS.map((link) => (
         <Link
           key={link.href}
@@ -72,7 +74,7 @@ export function MobileTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border sm:hidden z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border lg:hidden z-50">
       <div className="grid h-14" style={{ gridTemplateColumns: `repeat(${MOBILE_TABS.length}, minmax(0, 1fr))` }}>
         {MOBILE_TABS.map((tab) => {
           const active = isActive(tab.href, pathname);

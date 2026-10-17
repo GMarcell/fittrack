@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { sessionTonnage } from "@/lib/session";
+import { equipmentForPrompt } from "@/lib/onboarding";
 
 /**
  * Builds the plain-text performance report the coach reads during a weekly
@@ -118,14 +119,22 @@ export function buildCoachMessages(opts: {
   report: string;
   planSummary: string | null;
   content: string;
+  /** Raw stored equipment (comma-separated ids); constrains what the coach may program. */
+  equipment?: string | null;
 }): PromptMessage[] {
-  const { history, report, planSummary, content } = opts;
+  const { history, report, planSummary, content, equipment } = opts;
 
-  const system = [
+  const systemParts = [
     PERSONA,
     `CURRENT PLAN\n${planSummary ? truncate(planSummary, SUMMARY_BUDGET) : "No plan on file — they need to finish onboarding before a program can be adjusted."}`,
     `LOGGED PERFORMANCE (their actual data — context only, never paste it back verbatim)\n${truncate(report, REPORT_BUDGET)}`,
-  ].join("\n\n");
+  ];
+  if (equipment) {
+    systemParts.push(
+      `EQUIPMENT AVAILABLE\n${equipmentForPrompt(equipment)} Only program exercises this allows.`,
+    );
+  }
+  const system = systemParts.join("\n\n");
 
   const turns: PromptMessage[] = history.slice(-HISTORY_LIMIT).map((m) => ({
     role: m.role === "assistant" ? "assistant" : "user",

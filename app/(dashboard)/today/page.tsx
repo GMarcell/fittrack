@@ -7,16 +7,17 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, type SessionUser } from "@/lib/auth";
 import {
   dateKeyInTimezone,
-  exercisesFromPlanDay,
   findPlannedDay,
   isRestDay,
+  missedPlanDays,
   parsePlan,
-  suggestNextStep,
   weekdayInTimezone,
 } from "@/lib/session";
-import { lastPerformanceFor } from "@/lib/session-service";
-import { SessionRunner, type RunnerExercise } from "@/components/session/session-runner";
+import { runnerExercisesFor } from "@/lib/session-service";
+import { SessionRunner } from "@/components/session/session-runner";
 import { StartBlankSession } from "@/components/session/start-blank-session";
+import { StartPlannedSession } from "@/components/session/start-planned-session";
+import { DiscardSessionButton } from "@/components/session/discard-session-button";
 
 export const metadata: Metadata = { title: "Today — PR Tracker" };
 
@@ -36,75 +37,36 @@ export default async function TodayPage() {
       select: { planJson: true },
     }),
     prisma.workoutSession.findMany({
-      where: { userId: user.id, completedAt: null, date: { gte: new Date(now.getTime() - 3 * 86400_000) } },
+      where: { userId: user.id, completedAt: null },
       include: { exercises: { include: { sets: true }, orderBy: { sortOrder: "asc" } } },
       orderBy: { date: "desc" },
+      take: 10,
     }),
   ]);
 
   const session = openSessions.find((s) => dateKeyInTimezone(s.date, tz) === todayKey) ?? null;
+  const staleSessions = openSessions.filter(
+    (s) => dateKeyInTimezone(s.date, tz) !== todayKey,
+  );
   const plan = planRow ? parsePlan(planRow.planJson) : null;
   const plannedDay = plan ? findPlannedDay(plan, dayName) : null;
   const rest = plannedDay ? isRestDay(plannedDay) : false;
+  const missedDays = missedPlanDays(plan, openSessions, now, tz);
 
-  // Nothing started yet — seed a session from today's plan slot.
-  let activeSession = session;
-  if (!activeSession && plannedDay && !rest) {
-    activeSession = await prisma.workoutSession.create({
-      data: {
-        userId: user.id,
-        date: now,
-        planDay: plannedDay.day,
-        sessionType: plannedDay.sessionType,
-        exercises: {
-          create: exercisesFromPlanDay(plannedDay).map((ex, i) => ({
-            name: ex.exercise,
-            muscleGroup: ex.muscleGroup ?? null,
-            unit: "KG",
-            targetSets: ex.sets,
-            repTarget: ex.reps,
-            rpeTarget: ex.rpe ?? null,
-            sortOrder: i,
-          })),
-        },
-      },
-      include: { exercises: { include: { sets: true }, orderBy: { sortOrder: "asc" } } },
-    });
-  }
+  const activeSession = session;
 
-  const runnerExercises: RunnerExercise[] = await Promise.all(
-    (activeSession?.exercises ?? []).map(async (ex) => {
-      const last = await lastPerformanceFor(user.id, ex.name);
-      const suggestion = last
-        ? suggestNextStep(
-            { weight: last.weight, reps: last.reps, rpe: last.rpe, date: last.date },
-            ex.repTarget,
-          )
-        : null;
-      return {
-        id: ex.id,
-        name: ex.name,
-        muscleGroup: ex.muscleGroup,
-        unit: ex.unit,
-        targetSets: ex.targetSets,
-        repTarget: ex.repTarget,
-        rpeTarget: ex.rpeTarget,
-        sets: ex.sets
-          .slice()
-          .sort((a, b) => a.setNumber - b.setNumber)
-          .map((s) => ({
-            id: s.id,
-            setNumber: s.setNumber,
-            weight: s.weight,
-            reps: s.reps,
-            rpe: s.rpe,
-          })),
-        suggestion: suggestion
-          ? { weight: suggestion.weight, reps: suggestion.reps, note: suggestion.note }
-          : null,
-      };
-    }),
+  const runnerExercises = await runnerExercisesFor(
+    user.id,
+    activeSession?.exercises ?? [],
   );
+
+  // The plan slot this session actually belongs to, so a caught-up session
+  // still shows its own warm-up and cooldown.
+  const activePlanDay = activeSession?.planDay
+    ? findPlannedDay(plan ?? { weeklySchedule: [] }, activeSession.planDay)
+    : plannedDay && !rest
+      ? plannedDay
+      : null;
 
   return (
     <div className="space-y-6">
@@ -146,6 +108,92 @@ export default async function TodayPage() {
         </Card>
       )}
 
+      {plan && plannedDay && !rest && !activeSession && (
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle className="text-base">Today: {plannedDay.sessionType}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-muted-foreground">
+              {plannedDay.mainWorkout.length} exercises planned
+              {plannedDay.warmUp && plannedDay.warmUp.length > 0
+                ? ` · warm-up: ${plannedDay.warmUp.join(", ")}`
+                : ""}
+            </p>
+            <StartPlannedSession planDay={plannedDay} />
+          </CardContent>
+        </Card>
+      )}
+
+      {!activeSession && plan && missedDays.length > 0 && (
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle className="text-base">
+              Missed {missedDays[0].day}?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-muted-foreground">
+              You never started {missedDays[0].day}’s session ({missedDays[0].sessionType}).
+              You can still train it today — it will log against {missedDays[0].day}’s slot.
+              {missedDays.length > 1
+                ? ` ${missedDays.length - 1} older ${missedDays.length - 1 === 1 ? "session is" : "sessions are"} also outstanding.`
+                : ""}
+            </p>
+            <StartPlannedSession
+              planDay={missedDays[0]}
+              label={`Train ${missedDays[0].day} today`}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {staleSessions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Unfinished sessions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              These were started but never finished. Pick one back up or discard it.
+            </p>
+            {staleSessions.map((stale) => {
+              const sets = stale.exercises.reduce((n, ex) => n + ex.sets.length, 0);
+              return (
+                <div
+                  key={stale.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {stale.sessionType ?? stale.planDay ?? "Workout"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stale.date.toLocaleDateString("en-GB", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        timeZone: tz,
+                      })}{" "}
+                      · {sets} {sets === 1 ? "set" : "sets"} logged
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Link
+                      href={`/sessions/${stale.id}`}
+                      className="text-xs font-medium underline"
+                    >
+                      Resume
+                    </Link>
+                    <DiscardSessionButton sessionId={stale.id} />
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {activeSession && (
         <SessionRunner
           session={{
@@ -156,10 +204,10 @@ export default async function TodayPage() {
           }}
           exercises={runnerExercises}
           plan={
-            plannedDay && !rest
+            activePlanDay
               ? {
-                  warmUp: plannedDay.warmUp ?? [],
-                  cooldown: plannedDay.cooldown ?? [],
+                  warmUp: activePlanDay.warmUp ?? [],
+                  cooldown: activePlanDay.cooldown ?? [],
                   notes: plan?.notes ?? "",
                 }
               : null
